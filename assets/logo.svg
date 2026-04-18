@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" fill="none" aria-label="AI Model Router logo">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="48" y2="48" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#01696f"/>
+      <stop offset="100%" stop-color="#006494"/>
+    </linearGradient>
+  </defs>
+  <!-- rounded square background -->
+  <rect width="48" height="48" rx="12" fill="url(#bg)"/>
+  <!-- routing arrow mark: left input node → splitter → two output nodes -->
+  <!-- input dot -->
+  <circle cx="10" cy="24" r="3" fill="#cff0f2"/>
+  <!-- horizontal stem -->
+  <line x1="13" y1="24" x2="22" y2="24" stroke="#cff0f2" stroke-width="2" stroke-linecap="round"/>
+  <!-- splitter fork up -->
+  <line x1="22" y1="24" x2="30" y2="16" stroke="#cff0f2" stroke-width="2" stroke-linecap="round"/>
+  <!-- splitter fork down -->
+  <line x1="22" y1="24" x2="30" y2="32" stroke="#cff0f2" stroke-width="2" stroke-linecap="round"/>
+  <!-- output dot top -->
+  <circle cx="33" cy="16" r="3" fill="#89c166"/>
+  <!-- arrowhead top -->
+  <polyline points="31,13 34,16 31,19" fill="none" stroke="#89c166" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- output dot bottom -->
+  <circle cx="33" cy="32" r="3" fill="#e4ab53"/>
+  <!-- arrowhead bottom -->
+  <polyline points="31,29 34,32 31,35" fill="none" stroke="#e4ab53" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- small label "MR" top-right -->
+  <text x="39" y="12" font-size="6" font-family="'Cabinet Grotesk',sans-serif" font-weight="800" fill="#cff0f2" opacity="0.6">MR</text>
+</svg>
