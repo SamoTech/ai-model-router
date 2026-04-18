@@ -1,5 +1,5 @@
 {
-  "updated": "2026-04-18",
+  "updated": "2026-04-19",
   "models": [
     {
       "id": "gpt-5-4",
@@ -65,6 +65,66 @@
       "take": "Not a general text default, but very strong when the interface is live audio-first.",
       "benchmarks": {},
       "radar": { "coding": 4, "longContext": 4, "voice": 10, "computerUse": 4, "costEfficiency": 8 }
+    },
+    {
+      "id": "mistral-medium-3",
+      "name": "Mistral Medium 3",
+      "provider": "Mistral",
+      "inputRate": 0.4,
+      "outputRate": 2,
+      "contextWindow": "128K class",
+      "color": "#f29b66",
+      "bestAt": "General chat, balanced enterprise workloads",
+      "verdict": "good",
+      "verdictLabel": "Strong value",
+      "take": "A pragmatic mid-tier option when you want lower cost than frontier labs without dropping too far in quality.",
+      "benchmarks": { "Positioning": "Frontier-adjacent mid-tier" },
+      "radar": { "coding": 6, "longContext": 6, "voice": 3, "computerUse": 4, "costEfficiency": 8 }
+    },
+    {
+      "id": "llama-4-maverick",
+      "name": "Llama 4 Maverick",
+      "provider": "Meta / hosted vendors",
+      "inputRate": null,
+      "outputRate": null,
+      "contextWindow": "Vendor-dependent",
+      "color": "#5fa8f5",
+      "bestAt": "Open-weight experimentation and stack control",
+      "verdict": "good",
+      "verdictLabel": "Flexible open pick",
+      "take": "Useful when open-weight control matters more than having the absolute best hosted benchmark leader.",
+      "benchmarks": { "Strength": "Open ecosystem reach" },
+      "radar": { "coding": 7, "longContext": 7, "voice": 2, "computerUse": 4, "costEfficiency": 8 }
+    },
+    {
+      "id": "grok-3",
+      "name": "Grok 3",
+      "provider": "xAI",
+      "inputRate": null,
+      "outputRate": null,
+      "contextWindow": "Vendor-tier dependent",
+      "color": "#d97cff",
+      "bestAt": "Fast iteration and broad assistant tasks",
+      "verdict": "warn",
+      "verdictLabel": "Check pricing first",
+      "take": "Potentially competitive, but only worth routing to when its pricing and quality for your workload are clearly favorable.",
+      "benchmarks": { "Positioning": "General frontier assistant class" },
+      "radar": { "coding": 7, "longContext": 7, "voice": 4, "computerUse": 6, "costEfficiency": 5 }
+    },
+    {
+      "id": "command-r-plus",
+      "name": "Command R+",
+      "provider": "Cohere",
+      "inputRate": 3,
+      "outputRate": 15,
+      "contextWindow": "Enterprise RAG class",
+      "color": "#f2c14e",
+      "bestAt": "Enterprise retrieval and grounded generation",
+      "verdict": "warn",
+      "verdictLabel": "Niche enterprise fit",
+      "take": "Still relevant when your stack is retrieval-heavy and you value enterprise-oriented behavior over consumer mindshare.",
+      "benchmarks": { "Strength": "RAG-oriented enterprise workflows" },
+      "radar": { "coding": 5, "longContext": 7, "voice": 2, "computerUse": 3, "costEfficiency": 5 }
     },
     {
       "id": "deepseek-reasoning",

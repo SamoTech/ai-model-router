@@ -1,9 +1,11 @@
-name: validate-and-deploy-pages
+name: Deploy Pages
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '0 7 * * 1'
 
 permissions:
   contents: read
@@ -21,28 +23,51 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate models.json
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Validate models.json schema
         run: |
-          python - <<'PY'
-          import json
-          from pathlib import Path
-          p = Path('data/models.json')
-          data = json.loads(p.read_text())
-          assert 'updated' in data, 'missing updated field'
-          assert 'models' in data and isinstance(data['models'], list) and data['models'], 'models must be a non-empty list'
-          required = ['id', 'name', 'provider', 'contextWindow', 'bestAt', 'verdict', 'verdictLabel', 'take']
-          for i, m in enumerate(data['models']):
-              for k in required:
-                  assert k in m, f'model {i} missing {k}'
-          print('models.json schema looks valid')
-          PY
+          node <<'EOF'
+          const fs = require('fs');
+          const path = 'data/models.json';
+          const required = ['id','name','provider','contextWindow','bestAt','verdict','verdictLabel','take','color','radar'];
+          const radarKeys = ['coding','longContext','voice','computerUse','costEfficiency'];
+          const allowedVerdicts = new Set(['good','warn','bad']);
+          const raw = fs.readFileSync(path, 'utf8');
+          const data = JSON.parse(raw);
+          if (!data || !Array.isArray(data.models)) throw new Error('models must be an array');
+          const ids = new Set();
+          const colors = new Set();
+          for (const [i, model] of data.models.entries()) {
+            for (const key of required) if (!(key in model)) throw new Error(`model[${i}] missing ${key}`);
+            if (ids.has(model.id)) throw new Error(`duplicate id: ${model.id}`);
+            ids.add(model.id);
+            if (!allowedVerdicts.has(model.verdict)) throw new Error(`invalid verdict for ${model.id}`);
+            if (!/^#[0-9a-fA-F]{6}$/.test(model.color)) throw new Error(`invalid color for ${model.id}`);
+            if (colors.has(model.color)) throw new Error(`duplicate color: ${model.color}`);
+            colors.add(model.color);
+            if (typeof model.radar !== 'object' || !model.radar) throw new Error(`radar missing for ${model.id}`);
+            for (const rk of radarKeys) {
+              if (!(rk in model.radar)) throw new Error(`radar.${rk} missing for ${model.id}`);
+              const val = model.radar[rk];
+              if (!Number.isInteger(val) || val < 0 || val > 10) throw new Error(`radar.${rk} invalid for ${model.id}`);
+            }
+          }
+          console.log(`Validated ${data.models.length} models`);
+          EOF
+
+      - name: Verify changelog exists
+        run: test -f CHANGELOG.md
 
   deploy:
     needs: validate
-    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
