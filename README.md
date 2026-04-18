@@ -2,19 +2,89 @@
 
 > **Live site → [samotech.github.io/ai-model-router](https://samotech.github.io/ai-model-router/)**
 
-A production-style static dashboard for routing AI workloads to the right model. Covers GPT-5.4, Claude Opus 4.6, Gemini 3.1 Flash-Lite, Gemini Flash Live, and leading open-model classes.
+Route AI workloads to the right model. All model data lives in `data/models.json` — update it and the dashboard re-renders automatically.
 
 ---
 
-## Features
+## `data/models.json` schema
 
-- **Workload router** — coding agents, long-context research, voice, computer use, cost-sensitive traffic
-- **Interactive cost calculator** — monthly spend estimate per model with GPT-5.4 long-context surcharge logic
-- **Shareable calculator state** — inputs are synced to the URL hash so any scenario can be bookmarked or shared
-- **Value matrix** — per-model verdict (overpriced / worth it selectively / best deal) with plain-language take
-- **Benchmark snapshot** — SWE-Bench, Terminal-Bench, OSWorld numbers per model
-- **Light + dark mode** — follows system preference with manual toggle
-- **Data-driven** — all model data lives in `data/models.json`; update prices and verdicts without touching the UI
+Top-level shape:
+
+```jsonc
+{
+  "updated": "YYYY-MM-DD",   // shown in the dashboard Data status panel
+  "models": [ /* ModelEntry[] */ ]
+}
+```
+
+### ModelEntry
+
+```jsonc
+{
+  // --- Identity ---
+  "id":           "gemini-3-1-flash-lite",   // unique kebab-case slug
+  "name":         "Gemini 3.1 Flash-Lite",   // display name in all UI
+  "provider":     "Google",                   // OpenAI | Anthropic | Google | Open / self-host
+
+  // --- Pricing (USD per 1M tokens, null for self-hosted / unknown) ---
+  "inputRate":              0.25,
+  "outputRate":             1.50,
+  "longContextInputRate":   5.00,   // optional — surcharge rate (GPT-5.4 only)
+  "longContextThreshold":   272000, // optional — token count where surcharge activates
+  "audioInputRate":         3.00,   // optional — Flash Live only
+  "audioOutputRate":        12.00,  // optional — Flash Live only
+  "perMinute":              0.018,  // optional — voice cost per minute
+
+  // --- Context ---
+  "contextWindow": "High-scale efficient class",  // free-text shown in value matrix
+
+  // --- Routing ---
+  "bestAt":      "Cheap traffic, extraction, classification",
+
+  // --- Verdict badge ---
+  // verdict controls badge color:  "good" (green) | "warn" (amber) | "bad" (red)
+  "verdict":      "good",
+  "verdictLabel": "Secret best deal",
+  "take":         "The sensible default for high-volume production unless quality gaps become measurable.",
+
+  // --- Benchmark snapshot (any key → string value) ---
+  "benchmarks": {
+    "SWEBenchVerified": "80.84%",
+    "TerminalBench2":   "65.4%",
+    "OSWorld":          "72.7%"
+  },
+
+  // --- Radar chart (integer 0-10, all five keys required) ---
+  "radar": {
+    "coding":         5,
+    "longContext":     6,
+    "voice":          4,
+    "computerUse":    4,
+    "costEfficiency": 10
+  },
+
+  // --- Chart color ---
+  "color": "#89c166"   // hex, used in radar + bar chart datasets
+}
+```
+
+### Required fields
+
+Every entry must have these or the CI validation step will reject the push:
+
+```
+id  name  provider  contextWindow  bestAt  verdict  verdictLabel  take
+```
+
+All pricing fields (`inputRate`, `outputRate`, etc.) are optional and may be `null` for self-hosted models.
+
+### Adding a new model
+
+1. Copy an existing entry in `data/models.json`
+2. Fill in all required fields and any applicable pricing fields
+3. Pick a unique `color` hex not already used in the file
+4. Set `radar` scores (0–10) across all five dimensions
+5. Push to `main` — the CI workflow validates the schema and redeploys Pages automatically
 
 ---
 
@@ -22,67 +92,27 @@ A production-style static dashboard for routing AI workloads to the right model.
 
 ```
 ai-model-router/
-├── index.html                  # Dashboard UI — fetches data/models.json at runtime
+├── index.html                   # Dashboard UI — reads data/models.json at runtime
 ├── data/
-│   └── models.json             # All model pricing, verdicts, radar scores, benchmarks
+│   └── models.json              # Source of truth for all model data
 ├── .github/
 │   └── workflows/
-│       └── pages.yml           # Validates models.json then deploys to GitHub Pages
-├── .nojekyll                   # Disables Jekyll so the site is served as-is
+│       └── pages.yml            # JSON validation + GitHub Pages deploy
+├── .nojekyll                    # Disables Jekyll processing
 └── README.md
 ```
-
----
-
-## Updating model data
-
-All pricing and verdict changes are made in **`data/models.json`** only. The UI re-renders on every page load from this file.
-
-Fields per model entry:
-
-| Field | Type | Notes |
-|---|---|---|
-| `id` | string | Unique slug |
-| `name` | string | Display name |
-| `provider` | string | OpenAI / Anthropic / Google / Open / self-host |
-| `inputRate` | number \| null | USD per 1M input tokens; null for self-hosted |
-| `outputRate` | number \| null | USD per 1M output tokens |
-| `longContextInputRate` | number | GPT-5.4 only — higher rate beyond threshold |
-| `longContextThreshold` | number | Token count where surcharge kicks in |
-| `contextWindow` | string | Human-readable context size |
-| `color` | string | Hex used in charts |
-| `bestAt` | string | One-line use-case summary |
-| `verdict` | `"good"` \| `"warn"` \| `"bad"` | Controls badge color |
-| `verdictLabel` | string | Badge text |
-| `take` | string | Plain-language routing advice |
-| `benchmarks` | object | Key → value pairs shown in snapshot section |
-| `radar` | object | Scores (0–10) for coding / longContext / voice / computerUse / costEfficiency |
-
----
-
-## CI / Deploy
-
-The `.github/workflows/pages.yml` workflow runs on every push to `main`:
-
-1. **Validate** — runs a Python schema check on `data/models.json` to catch missing required fields before anything ships
-2. **Deploy** — uploads the repo root as a Pages artifact and deploys to `https://samotech.github.io/ai-model-router/`
-
-No build step required. The site is pure static HTML + a JSON fetch.
 
 ---
 
 ## Local preview
 
 ```bash
-# Any static file server works — here are two options:
 npx serve .
 # or
 python -m http.server 8080
 ```
 
-Then open `http://localhost:8080`.
-
-> Note: opening `index.html` directly as a `file://` URL will fail because `fetch('./data/models.json')` is blocked by browser CORS policy on local file URLs. Use a local server instead.
+Open `http://localhost:8080`. Do **not** open `index.html` as a `file://` URL — the JSON fetch will be blocked by browser CORS policy.
 
 ---
 
@@ -90,10 +120,10 @@ Then open `http://localhost:8080`.
 
 | Layer | Choice |
 |---|---|
-| UI framework | Vanilla HTML + CSS custom properties |
-| Charts | Chart.js 4.4 via CDN |
-| Icons | Lucide via CDN |
-| Fonts | Cabinet Grotesk + Satoshi (Fontshare) |
-| Data | Static JSON (`data/models.json`) |
-| Hosting | GitHub Pages (root of `main` branch) |
-| CI | GitHub Actions |
+| UI | Vanilla HTML + CSS custom properties |
+| Charts | Chart.js 4.4 (CDN) |
+| Icons | Lucide (CDN) |
+| Fonts | Cabinet Grotesk + Satoshi via Fontshare |
+| Data | `data/models.json` (static, fetched at runtime) |
+| Hosting | GitHub Pages — `https://samotech.github.io/ai-model-router/` |
+| CI | GitHub Actions (`pages.yml`) |
