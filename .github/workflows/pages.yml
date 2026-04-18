@@ -1,0 +1,60 @@
+name: validate-and-deploy-pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate models.json
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('data/models.json')
+          data = json.loads(p.read_text())
+          assert 'updated' in data, 'missing updated field'
+          assert 'models' in data and isinstance(data['models'], list) and data['models'], 'models must be a non-empty list'
+          required = ['id', 'name', 'provider', 'contextWindow', 'bestAt', 'verdict', 'verdictLabel', 'take']
+          for i, m in enumerate(data['models']):
+              for k in required:
+                  assert k in m, f'model {i} missing {k}'
+          print('models.json schema looks valid')
+          PY
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: .
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

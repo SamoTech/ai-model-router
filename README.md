@@ -5,11 +5,12 @@ A production-style static dashboard for routing workloads across GPT-5.4, Claude
 ## Included
 
 - Workload router for coding agents, long-context research, voice, computer use, and cost-sensitive traffic
-- Interactive monthly usage calculator
-- Value matrix showing where each model is overpriced, overrated, or the best deal
-- Release notes and benchmark snapshot sections
-- Single-file deploy that works well on GitHub Pages
+- Interactive monthly usage calculator with shareable URL hash state
+- Data layer in `data/models.json` for easier price and verdict updates
+- GitHub Pages deployment workflow with JSON validation
 
 ## Repo
 
-Website entry point: `index.html`
+- Website entry point: `index.html`
+- Data source: `data/models.json`
+- CI / deploy workflow: `.github/workflows/pages.yml`
