@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Model Router</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background:#0b1020; color:#e5e7eb; }
+    .card { background:#121a31; border:1px solid #223056; }
+    .muted { color:#94a3b8; }
+    .pill { border:1px solid #334155; background:#0f172a; }
+    .good { color:#34d399; }
+    .warn { color:#fbbf24; }
+    .bad { color:#f87171; }
+    table { border-collapse: collapse; width:100%; }
+    th, td { border-bottom:1px solid #23314f; padding:10px; vertical-align:top; }
+    th { text-align:left; color:#cbd5e1; }
+    input { background:#0f172a; border:1px solid #334155; color:white; padding:8px 10px; border-radius:8px; width:100%; }
+    select { background:#0f172a; border:1px solid #334155; color:white; padding:8px 10px; border-radius:8px; width:100%; }
+    a { color:#7dd3fc; }
+  </style>
+</head>
+<body>
+  <div class="max-w-7xl mx-auto p-6 space-y-8">
+    <header class="space-y-3">
+      <h1 class="text-4xl font-bold">AI Model Router</h1>
+      <p class="text-lg muted">Route workloads across GPT-5.4, Claude Opus 4.6, Gemini 3.1 Flash-Lite / Flash Live, and top open models.</p>
+      <div class="flex flex-wrap gap-2 text-sm">
+        <span class="pill px-3 py-1 rounded-full">Coding agents</span>
+        <span class="pill px-3 py-1 rounded-full">Long-context research</span>
+        <span class="pill px-3 py-1 rounded-full">Voice / realtime</span>
+        <span class="pill px-3 py-1 rounded-full">Computer use</span>
+        <span class="pill px-3 py-1 rounded-full">Cost-sensitive traffic</span>
+      </div>
+    </header>
+
+    <section class="grid md:grid-cols-3 gap-4">
+      <div class="card rounded-2xl p-5">
+        <div class="text-sm muted">Best coding agent</div>
+        <div class="text-2xl font-semibold mt-1">Claude Opus 4.6</div>
+        <p class="muted mt-2">Wins when quality matters most; strongest coding and terminal-agent benchmarks in this set.</p>
+      </div>
+      <div class="card rounded-2xl p-5">
+        <div class="text-sm muted">Best long context</div>
+        <div class="text-2xl font-semibold mt-1">GPT-5.4</div>
+        <p class="muted mt-2">1.05M-token context and strong general reasoning, but pricing jumps above 272K input tokens.</p>
+      </div>
+      <div class="card rounded-2xl p-5">
+        <div class="text-sm muted">Best cheap traffic</div>
+        <div class="text-2xl font-semibold mt-1">Gemini 3.1 Flash-Lite</div>
+        <p class="muted mt-2">Best value for high-volume production where latency and token cost matter more than absolute frontier quality.</p>
+      </div>
+    </section>
+
+    <section class="card rounded-2xl p-6 space-y-4">
+      <h2 class="text-2xl font-semibold">Workload router</h2>
+      <div class="overflow-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Workload</th>
+              <th>Winner</th>
+              <th>Runner-up</th>
+              <th>Why</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Coding agents</td>
+              <td>Claude Opus 4.6</td>
+              <td>GPT-5.4</td>
+              <td>Best SWE/terminal-agent claims and strongest reputation for large repo work. Use GPT-5.4 when computer-use automation matters more.</td>
+            </tr>
+            <tr>
+              <td>Long-context research</td>
+              <td>GPT-5.4</td>
+              <td>Claude Opus 4.6</td>
+              <td>GPT-5.4 reaches 1.05M context. Claude also reaches 1M in current docs, but GPT-5.4 is cheaper per token than Opus 4.6.</td>
+            </tr>
+            <tr>
+              <td>Voice / realtime</td>
+              <td>Gemini Flash Live</td>
+              <td>GPT realtime family</td>
+              <td>Google exposes explicit Live pricing for audio and focuses on realtime multimodal sessions. Best fit for production voice surfaces.</td>
+            </tr>
+            <tr>
+              <td>Computer use</td>
+              <td>GPT-5.4</td>
+              <td>Claude Opus 4.6</td>
+              <td>Best OSWorld/computer-use claims among the compared frontier models.</td>
+            </tr>
+            <tr>
+              <td>Cost-sensitive production</td>
+              <td>Gemini 3.1 Flash-Lite</td>
+              <td>Open models via self-hosting</td>
+              <td>For API economics, Flash-Lite is the cheapest serious hosted option here. For sustained large volume and stable workloads, open models can undercut it if infra is already amortized.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="grid lg:grid-cols-2 gap-6">
+      <div class="card rounded-2xl p-6 space-y-4">
+        <h2 class="text-2xl font-semibold">Usage calculator</h2>
+        <p class="muted">Set your monthly traffic. Costs use list pricing from the collected model pages.</p>
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm mb-1">Monthly input tokens</label>
+            <input id="inputTokens" type="number" value="50000000" />
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Monthly output tokens</label>
+            <input id="outputTokens" type="number" value="10000000" />
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Average prompt size</label>
+            <input id="avgPrompt" type="number" value="32000" />
+          </div>
+          <div>
+            <label class="block text-sm mb-1">Voice minutes / month</label>
+            <input id="voiceMinutes" type="number" value="0" />
+          </div>
+        </div>
+        <div id="calcResults" class="space-y-2"></div>
+      </div>
+
+      <div class="card rounded-2xl p-6 space-y-4">
+        <h2 class="text-2xl font-semibold">Value verdicts</h2>
+        <div class="overflow-auto">
+          <table>
+            <thead>
+              <tr><th>Model</th><th>Verdict</th><th>Take</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>GPT-5.4</td><td class="warn">Overpriced for routine traffic</td><td>Excellent for computer use and giant context, but poor economics for everyday API traffic, especially past 272K context.</td></tr>
+              <tr><td>Claude Opus 4.6</td><td class="bad">Overpriced if you do not monetize quality</td><td>Secret weapon for coding agents, but too expensive for broad production unless failures are costly.</td></tr>
+              <tr><td>Gemini 3.1 Flash-Lite</td><td class="good">Secretly the best deal</td><td>Probably the default for bulk text generation, classification, extraction, and agent loops where low latency matters.</td></tr>
+              <tr><td>Gemini Flash Live</td><td class="good">Best voice-first buy</td><td>Specialized, clear realtime pricing and strong fit for live audio products.</td></tr>
+              <tr><td>Qwen / DeepSeek open models</td><td class="good">Underrated if self-hosted well</td><td>Open models win when privacy, fine-tuning, or amortized infra matters more than top-tier hosted reliability.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="card rounded-2xl p-6 space-y-4">
+      <h2 class="text-2xl font-semibold">Model matrix</h2>
+      <div class="overflow-auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Model</th>
+              <th>Input $/1M</th>
+              <th>Output $/1M</th>
+              <th>Context</th>
+              <th>Benchmark claims</th>
+              <th>Best at</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>GPT-5.4</td><td>2.50 (5.00 >272K)</td><td>15.00</td><td>1.05M</td><td>75% OSWorld, 57.7% SWE-Bench Pro public</td><td>Computer use, long-context generalist</td></tr>
+            <tr><td>Claude Opus 4.6</td><td>5.00</td><td>25.00</td><td>1M input / 128K output</td><td>80.84% SWE-Bench Verified, 65.4% Terminal-Bench 2.0, 72.7% OSWorld</td><td>Coding agents, deep research</td></tr>
+            <tr><td>Gemini 3.1 Flash-Lite</td><td>0.25</td><td>1.50</td><td>Cost-efficient class</td><td>2.5x faster TTFT and 45% higher output speed vs 2.5 Flash</td><td>Cheap, fast production traffic</td></tr>
+            <tr><td>Gemini Flash Live</td><td>0.50 text / 3.00 audio</td><td>2.00 text / 12.00 audio</td><td>Realtime multimodal</td><td>Live API voice focus</td><td>Voice and realtime apps</td></tr>
+            <tr><td>DeepSeek-R1 / V3.2</td><td>Self-host / vendor-dependent</td><td>Self-host / vendor-dependent</td><td>Varies</td><td>Open reasoning leader class</td><td>Cheap reasoning when infra exists</td></tr>
+            <tr><td>Qwen2.5-Coder / Qwen3.5</td><td>Self-host / vendor-dependent</td><td>Self-host / vendor-dependent</td><td>Up to 256K+ depending on deploy</td><td>Best open coding value per size class</td><td>Open coding, privacy, customization</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card rounded-2xl p-6 space-y-4">
+      <h2 class="text-2xl font-semibold">Release notes snapshot</h2>
+      <ul class="list-disc pl-6 space-y-2 muted">
+        <li>GPT-5.4: moved to 1.05M context, introduced higher pricing beyond 272K context, and emphasized computer-use gains.</li>
+        <li>Claude Opus 4.6: February 2026 release, 1M input / 128K output, stronger coding/agent benchmarks, agent teams, adaptive thinking.</li>
+        <li>Gemini 3.1 Flash-Lite: March 2026 preview, lower cost than prior Flash variants, focused on high-volume low-latency traffic.</li>
+        <li>Gemini Flash Live: positioned for realtime voice and multimodal sessions with explicit audio pricing.</li>
+      </ul>
+    </section>
+
+    <section class="card rounded-2xl p-6 space-y-3 text-sm muted">
+      <h2 class="text-2xl font-semibold text-white">Sources used</h2>
+      <p>This site is a manually curated synthesis of current public model pages, pricing docs, and third-party benchmark summaries. Verify final production pricing before committing budget.</p>
+      <ul class="list-disc pl-6 space-y-1">
+        <li><a href="https://openai.com/api/pricing/">OpenAI API pricing</a></li>
+        <li><a href="https://developers.openai.com/api/docs/pricing">OpenAI developer pricing docs</a></li>
+        <li><a href="https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-1-flash-lite">Vertex AI Gemini 3.1 Flash-Lite</a></li>
+        <li><a href="https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite-preview">Gemini 3.1 Flash-Lite preview</a></li>
+        <li><a href="https://ai.google.dev/gemini-api/docs/pricing">Gemini API pricing</a></li>
+        <li><a href="https://docs.cloud.google.com/vertex-ai/generative-ai/docs/partner-models/claude/opus-4-6">Claude Opus 4.6 on Vertex AI</a></li>
+      </ul>
+    </section>
+  </div>
+
+  <script>
+    const models = [
+      { name:'GPT-5.4', in:2.5, out:15, surchargeThreshold:272000, surchargeIn:5 },
+      { name:'Claude Opus 4.6', in:5, out:25 },
+      { name:'Gemini 3.1 Flash-Lite', in:0.25, out:1.5 },
+      { name:'Gemini Flash Live (text)', in:0.5, out:2 },
+      { name:'Gemini Flash Live (audio)', in:3, out:12, perMinute:0.018 }
+    ];
+
+    function dollars(n){ return '$' + n.toFixed(2); }
+
+    function calculate(){
+      const input = Number(document.getElementById('inputTokens').value || 0);
+      const output = Number(document.getElementById('outputTokens').value || 0);
+      const avgPrompt = Number(document.getElementById('avgPrompt').value || 0);
+      const voiceMinutes = Number(document.getElementById('voiceMinutes').value || 0);
+      const overThreshold = avgPrompt > 272000;
+
+      const rows = models.map(m => {
+        let inRate = m.in;
+        if (m.name === 'GPT-5.4' && overThreshold) inRate = m.surchargeIn;
+        let total = (input/1e6)*inRate + (output/1e6)*m.out;
+        if (m.perMinute && voiceMinutes > 0) total += voiceMinutes * m.perMinute;
+        return { ...m, inRate, total };
+      }).sort((a,b)=>a.total-b.total);
+
+      document.getElementById('calcResults').innerHTML = rows.map((r, idx) =>
+        `<div class="flex items-center justify-between pill rounded-xl px-4 py-3">
+          <div><div class="font-medium">${idx+1}. ${r.name}</div><div class="text-sm muted">Input ${r.inRate}/1M • Output ${r.out}/1M</div></div>
+          <div class="text-xl font-semibold">${dollars(r.total)}</div>
+        </div>`
+      ).join('') + (overThreshold ? `<p class="warn text-sm">GPT-5.4 long-context surcharge applied because average prompt size exceeds 272K tokens.</p>` : '');
+    }
+
+    ['inputTokens','outputTokens','avgPrompt','voiceMinutes'].forEach(id => {
+      document.getElementById(id).addEventListener('input', calculate);
+    });
+    calculate();
+  </script>
+</body>
+</html>

@@ -1,2 +1,3 @@
-# ai-model-router
-AI Model Workload Router — compare GPT-5.4, Claude Opus 4.6, Gemini 3.1 Flash/Flash-Live, and top open models with a cost calculator and decision matrix
+# AI Model Router
+
+Interactive website comparing frontier and open AI models for routing workloads across coding agents, long-context research, voice, computer use, and cost-sensitive production traffic.
