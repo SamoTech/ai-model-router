@@ -1,8 +1,8 @@
 <div align="center">
 
-# 🔀 AI Model Router
+<img src="./assets/banner.svg" alt="AI Model Router — Route workloads to the right model, not just the loudest one" width="100%" />
 
-**Route AI workloads to the right model — not just the loudest one.**
+<br /><br />
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-samotech.github.io-01696f?style=for-the-badge&logo=github)](https://samotech.github.io/ai-model-router/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=for-the-badge)](LICENSE)
@@ -134,6 +134,10 @@ id  name  provider  contextWindow  bestAt  verdict  verdictLabel  take
 ```
 ai-model-router/
 ├── index.html                   # Dashboard UI — fetches data/models.json at runtime
+├── assets/
+│   ├── logo.svg                 # 48×48 brand mark
+│   ├── favicon.svg              # 32×32 browser tab icon
+│   └── banner.svg               # 1280×640 GitHub social preview
 ├── data/
 │   └── models.json              # ✏️  Source of truth — edit this to update the dashboard
 ├── .github/
