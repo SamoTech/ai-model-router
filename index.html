@@ -1,238 +1,43 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI Model Router</title>
+  <title>Model Router Dashboard</title>
+  <meta name="description" content="Interactive workload router for frontier and open AI models with cost calculator, routing recommendations, and value matrix." />
+  <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=cabinet-grotesk@500,700,800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js" defer></script>
   <style>
-    body { background:#0b1020; color:#e5e7eb; }
-    .card { background:#121a31; border:1px solid #223056; }
-    .muted { color:#94a3b8; }
-    .pill { border:1px solid #334155; background:#0f172a; }
-    .good { color:#34d399; }
-    .warn { color:#fbbf24; }
-    .bad { color:#f87171; }
-    table { border-collapse: collapse; width:100%; }
-    th, td { border-bottom:1px solid #23314f; padding:10px; vertical-align:top; }
-    th { text-align:left; color:#cbd5e1; }
-    input { background:#0f172a; border:1px solid #334155; color:white; padding:8px 10px; border-radius:8px; width:100%; }
-    select { background:#0f172a; border:1px solid #334155; color:white; padding:8px 10px; border-radius:8px; width:100%; }
-    a { color:#7dd3fc; }
+    :root, [data-theme="light"] { --text-xs: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem); --text-sm: clamp(0.875rem, 0.8rem + 0.35vw, 1rem); --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem); --text-lg: clamp(1.125rem, 1rem + 0.75vw, 1.5rem); --text-xl: clamp(1.5rem, 1.2rem + 1.25vw, 2.25rem); --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem; --space-4: 1rem; --space-5: 1.25rem; --space-6: 1.5rem; --space-8: 2rem; --space-10: 2.5rem; --space-12: 3rem; --space-16: 4rem; --color-bg:#f7f6f2; --color-surface:#f9f8f5; --color-surface-2:#fbfbf9; --color-surface-offset:#f3f0ec; --color-surface-dynamic:#e6e4df; --color-border:#d4d1ca; --color-divider:#dcd9d5; --color-text:#28251d; --color-text-muted:#66645f; --color-text-faint:#8e8b85; --color-text-inverse:#f9f8f4; --color-primary:#01696f; --color-primary-hover:#0c4e54; --color-success:#437a22; --color-warning:#b86a10; --color-error:#a13544; --color-blue:#006494; --color-purple:#7a39bb; --shadow-sm:0 1px 2px oklch(0.2 0.01 80 / 0.06); --shadow-md:0 8px 24px oklch(0.2 0.01 80 / 0.08); --shadow-lg:0 18px 50px oklch(0.2 0.01 80 / 0.12); --radius-sm:0.375rem; --radius-md:0.75rem; --radius-lg:1rem; --radius-xl:1.5rem; --radius-full:9999px; --font-display:'Cabinet Grotesk', 'Inter', sans-serif; --font-body:'Satoshi', 'Inter', sans-serif; }
+    [data-theme="dark"] { --color-bg:#12110f; --color-surface:#171614; --color-surface-2:#1d1c1a; --color-surface-offset:#23211f; --color-surface-dynamic:#2e2c2a; --color-border:#34322f; --color-divider:#2a2826; --color-text:#ece8de; --color-text-muted:#b0aa9d; --color-text-faint:#827c71; --color-text-inverse:#171614; --color-primary:#68b7c1; --color-primary-hover:#8dd7df; --color-success:#89c166; --color-warning:#e4ab53; --color-error:#e27a8b; --color-blue:#7ab5dd; --color-purple:#b590e2; --shadow-sm:0 1px 2px oklch(0 0 0 / 0.2); --shadow-md:0 8px 24px oklch(0 0 0 / 0.3); --shadow-lg:0 18px 50px oklch(0 0 0 / 0.42); }
+    *,:before,:after{box-sizing:border-box} html{-webkit-text-size-adjust:none;text-size-adjust:none;scroll-behavior:smooth} body{margin:0;min-height:100vh;font-family:var(--font-body);font-size:var(--text-base);line-height:1.6;background:radial-gradient(circle at top right, color-mix(in oklab, var(--color-primary) 12%, transparent), transparent 30%), var(--color-bg);color:var(--color-text)} h1,h2,h3{font-family:var(--font-display);line-height:1.05;letter-spacing:-0.03em} p{max-width:70ch} a{color:inherit} img,svg,canvas{display:block;max-width:100%} button,input,select{font:inherit} button{cursor:pointer}
+    .shell{display:grid;grid-template-columns:290px minmax(0,1fr);min-height:100vh}.sidebar{position:sticky;top:0;height:100vh;padding:var(--space-6);background:color-mix(in oklab, var(--color-surface) 92%, black 8%);border-right:1px solid color-mix(in oklab, var(--color-text) 12%, transparent);display:flex;flex-direction:column;gap:var(--space-6)}.brand{display:flex;align-items:center;gap:var(--space-3)}.logo{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--color-primary),color-mix(in oklab,var(--color-blue) 65%,var(--color-primary)));display:grid;place-items:center;color:#071417;box-shadow:var(--shadow-md)}.nav a{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:14px;color:var(--color-text-muted);text-decoration:none}.nav a:hover,.nav a.active{background:color-mix(in oklab,var(--color-primary) 12%, transparent);color:var(--color-text)}.main{padding:var(--space-6);display:flex;flex-direction:column;gap:var(--space-6)}.topbar{display:flex;justify-content:space-between;gap:var(--space-4);align-items:flex-start}.eyebrow{display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;background:color-mix(in oklab,var(--color-primary) 14%, transparent);color:var(--color-primary);font-size:var(--text-xs);text-transform:uppercase;letter-spacing:0.14em}.panel{background:color-mix(in oklab,var(--color-surface) 94%, transparent);border:1px solid color-mix(in oklab,var(--color-text) 10%, transparent);border-radius:24px;box-shadow:var(--shadow-sm)}.hero{padding:var(--space-8);display:grid;grid-template-columns:1.4fr 1fr;gap:var(--space-6);align-items:end;overflow:hidden;position:relative}.hero:before{content:"";position:absolute;inset:auto -10% -30% auto;width:320px;height:320px;background:radial-gradient(circle, color-mix(in oklab, var(--color-primary) 28%, transparent), transparent 70%);filter:blur(12px)}.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--space-4)}.card{padding:var(--space-5)}.kpi-value{font-size:clamp(1.6rem,1.2rem + 1vw,2.2rem);font-weight:800;font-family:var(--font-display)}.muted{color:var(--color-text-muted)} .faint{color:var(--color-text-faint)}.grid-2{display:grid;grid-template-columns:1.1fr .9fr;gap:var(--space-6)}.table-wrap{overflow:auto}.matrix table,.router table{width:100%;border-collapse:collapse}.matrix th,.matrix td,.router th,.router td{padding:14px 12px;border-bottom:1px solid var(--color-divider);text-align:left;vertical-align:top}.matrix th,.router th{font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.12em;color:var(--color-text-faint)}.badge{display:inline-flex;align-items:center;gap:8px;padding:7px 11px;border-radius:999px;font-size:var(--text-xs);font-weight:700}.badge.good{background:color-mix(in oklab,var(--color-success) 20%, transparent);color:var(--color-success)}.badge.warn{background:color-mix(in oklab,var(--color-warning) 20%, transparent);color:var(--color-warning)}.badge.bad{background:color-mix(in oklab,var(--color-error) 18%, transparent);color:var(--color-error)}.inputs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--space-4)}label{display:block;font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.1em;color:var(--color-text-faint);margin-bottom:8px}input,select{width:100%;border:1px solid var(--color-border);background:var(--color-surface-offset);color:var(--color-text);padding:14px 14px;border-radius:14px;outline:none} input:focus,select:focus{border-color:var(--color-primary);box-shadow:0 0 0 4px color-mix(in oklab,var(--color-primary) 18%, transparent)}.results{display:grid;gap:12px;margin-top:var(--space-4)} .result-row{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-radius:16px;background:var(--color-surface-offset)}.small{font-size:var(--text-sm)}.footer-note{padding:var(--space-5);font-size:var(--text-sm)}.theme-btn{border:1px solid var(--color-border);background:var(--color-surface);color:var(--color-text);border-radius:999px;padding:10px 12px;display:inline-flex;align-items:center;gap:10px}.mobile-nav{display:none}
+    @media (max-width: 1100px){.shell{grid-template-columns:1fr}.sidebar{display:none}.mobile-nav{display:flex;position:sticky;top:0;z-index:10;padding:12px 16px;background:color-mix(in oklab,var(--color-bg) 82%, transparent);backdrop-filter:blur(14px);border-bottom:1px solid var(--color-divider)}.hero,.grid-2{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width: 680px){.main{padding:16px}.hero{padding:20px}.kpis{grid-template-columns:1fr}.inputs{grid-template-columns:1fr}.topbar{flex-direction:column}}
+    @supports (animation-timeline: scroll()) {.reveal{opacity:0;animation:reveal linear both;animation-timeline:view();animation-range:entry 10% entry 55%}@keyframes reveal{to{opacity:1}}}
   </style>
 </head>
 <body>
-  <div class="max-w-7xl mx-auto p-6 space-y-8">
-    <header class="space-y-3">
-      <h1 class="text-4xl font-bold">AI Model Router</h1>
-      <p class="text-lg muted">Route workloads across GPT-5.4, Claude Opus 4.6, Gemini 3.1 Flash-Lite / Flash Live, and top open models.</p>
-      <div class="flex flex-wrap gap-2 text-sm">
-        <span class="pill px-3 py-1 rounded-full">Coding agents</span>
-        <span class="pill px-3 py-1 rounded-full">Long-context research</span>
-        <span class="pill px-3 py-1 rounded-full">Voice / realtime</span>
-        <span class="pill px-3 py-1 rounded-full">Computer use</span>
-        <span class="pill px-3 py-1 rounded-full">Cost-sensitive traffic</span>
-      </div>
-    </header>
-
-    <section class="grid md:grid-cols-3 gap-4">
-      <div class="card rounded-2xl p-5">
-        <div class="text-sm muted">Best coding agent</div>
-        <div class="text-2xl font-semibold mt-1">Claude Opus 4.6</div>
-        <p class="muted mt-2">Wins when quality matters most; strongest coding and terminal-agent benchmarks in this set.</p>
-      </div>
-      <div class="card rounded-2xl p-5">
-        <div class="text-sm muted">Best long context</div>
-        <div class="text-2xl font-semibold mt-1">GPT-5.4</div>
-        <p class="muted mt-2">1.05M-token context and strong general reasoning, but pricing jumps above 272K input tokens.</p>
-      </div>
-      <div class="card rounded-2xl p-5">
-        <div class="text-sm muted">Best cheap traffic</div>
-        <div class="text-2xl font-semibold mt-1">Gemini 3.1 Flash-Lite</div>
-        <p class="muted mt-2">Best value for high-volume production where latency and token cost matter more than absolute frontier quality.</p>
-      </div>
-    </section>
-
-    <section class="card rounded-2xl p-6 space-y-4">
-      <h2 class="text-2xl font-semibold">Workload router</h2>
-      <div class="overflow-auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Workload</th>
-              <th>Winner</th>
-              <th>Runner-up</th>
-              <th>Why</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>Coding agents</td>
-              <td>Claude Opus 4.6</td>
-              <td>GPT-5.4</td>
-              <td>Best SWE/terminal-agent claims and strongest reputation for large repo work. Use GPT-5.4 when computer-use automation matters more.</td>
-            </tr>
-            <tr>
-              <td>Long-context research</td>
-              <td>GPT-5.4</td>
-              <td>Claude Opus 4.6</td>
-              <td>GPT-5.4 reaches 1.05M context. Claude also reaches 1M in current docs, but GPT-5.4 is cheaper per token than Opus 4.6.</td>
-            </tr>
-            <tr>
-              <td>Voice / realtime</td>
-              <td>Gemini Flash Live</td>
-              <td>GPT realtime family</td>
-              <td>Google exposes explicit Live pricing for audio and focuses on realtime multimodal sessions. Best fit for production voice surfaces.</td>
-            </tr>
-            <tr>
-              <td>Computer use</td>
-              <td>GPT-5.4</td>
-              <td>Claude Opus 4.6</td>
-              <td>Best OSWorld/computer-use claims among the compared frontier models.</td>
-            </tr>
-            <tr>
-              <td>Cost-sensitive production</td>
-              <td>Gemini 3.1 Flash-Lite</td>
-              <td>Open models via self-hosting</td>
-              <td>For API economics, Flash-Lite is the cheapest serious hosted option here. For sustained large volume and stable workloads, open models can undercut it if infra is already amortized.</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="grid lg:grid-cols-2 gap-6">
-      <div class="card rounded-2xl p-6 space-y-4">
-        <h2 class="text-2xl font-semibold">Usage calculator</h2>
-        <p class="muted">Set your monthly traffic. Costs use list pricing from the collected model pages.</p>
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="block text-sm mb-1">Monthly input tokens</label>
-            <input id="inputTokens" type="number" value="50000000" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">Monthly output tokens</label>
-            <input id="outputTokens" type="number" value="10000000" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">Average prompt size</label>
-            <input id="avgPrompt" type="number" value="32000" />
-          </div>
-          <div>
-            <label class="block text-sm mb-1">Voice minutes / month</label>
-            <input id="voiceMinutes" type="number" value="0" />
-          </div>
-        </div>
-        <div id="calcResults" class="space-y-2"></div>
-      </div>
-
-      <div class="card rounded-2xl p-6 space-y-4">
-        <h2 class="text-2xl font-semibold">Value verdicts</h2>
-        <div class="overflow-auto">
-          <table>
-            <thead>
-              <tr><th>Model</th><th>Verdict</th><th>Take</th></tr>
-            </thead>
-            <tbody>
-              <tr><td>GPT-5.4</td><td class="warn">Overpriced for routine traffic</td><td>Excellent for computer use and giant context, but poor economics for everyday API traffic, especially past 272K context.</td></tr>
-              <tr><td>Claude Opus 4.6</td><td class="bad">Overpriced if you do not monetize quality</td><td>Secret weapon for coding agents, but too expensive for broad production unless failures are costly.</td></tr>
-              <tr><td>Gemini 3.1 Flash-Lite</td><td class="good">Secretly the best deal</td><td>Probably the default for bulk text generation, classification, extraction, and agent loops where low latency matters.</td></tr>
-              <tr><td>Gemini Flash Live</td><td class="good">Best voice-first buy</td><td>Specialized, clear realtime pricing and strong fit for live audio products.</td></tr>
-              <tr><td>Qwen / DeepSeek open models</td><td class="good">Underrated if self-hosted well</td><td>Open models win when privacy, fine-tuning, or amortized infra matters more than top-tier hosted reliability.</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </section>
-
-    <section class="card rounded-2xl p-6 space-y-4">
-      <h2 class="text-2xl font-semibold">Model matrix</h2>
-      <div class="overflow-auto">
-        <table>
-          <thead>
-            <tr>
-              <th>Model</th>
-              <th>Input $/1M</th>
-              <th>Output $/1M</th>
-              <th>Context</th>
-              <th>Benchmark claims</th>
-              <th>Best at</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr><td>GPT-5.4</td><td>2.50 (5.00 >272K)</td><td>15.00</td><td>1.05M</td><td>75% OSWorld, 57.7% SWE-Bench Pro public</td><td>Computer use, long-context generalist</td></tr>
-            <tr><td>Claude Opus 4.6</td><td>5.00</td><td>25.00</td><td>1M input / 128K output</td><td>80.84% SWE-Bench Verified, 65.4% Terminal-Bench 2.0, 72.7% OSWorld</td><td>Coding agents, deep research</td></tr>
-            <tr><td>Gemini 3.1 Flash-Lite</td><td>0.25</td><td>1.50</td><td>Cost-efficient class</td><td>2.5x faster TTFT and 45% higher output speed vs 2.5 Flash</td><td>Cheap, fast production traffic</td></tr>
-            <tr><td>Gemini Flash Live</td><td>0.50 text / 3.00 audio</td><td>2.00 text / 12.00 audio</td><td>Realtime multimodal</td><td>Live API voice focus</td><td>Voice and realtime apps</td></tr>
-            <tr><td>DeepSeek-R1 / V3.2</td><td>Self-host / vendor-dependent</td><td>Self-host / vendor-dependent</td><td>Varies</td><td>Open reasoning leader class</td><td>Cheap reasoning when infra exists</td></tr>
-            <tr><td>Qwen2.5-Coder / Qwen3.5</td><td>Self-host / vendor-dependent</td><td>Self-host / vendor-dependent</td><td>Up to 256K+ depending on deploy</td><td>Best open coding value per size class</td><td>Open coding, privacy, customization</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="card rounded-2xl p-6 space-y-4">
-      <h2 class="text-2xl font-semibold">Release notes snapshot</h2>
-      <ul class="list-disc pl-6 space-y-2 muted">
-        <li>GPT-5.4: moved to 1.05M context, introduced higher pricing beyond 272K context, and emphasized computer-use gains.</li>
-        <li>Claude Opus 4.6: February 2026 release, 1M input / 128K output, stronger coding/agent benchmarks, agent teams, adaptive thinking.</li>
-        <li>Gemini 3.1 Flash-Lite: March 2026 preview, lower cost than prior Flash variants, focused on high-volume low-latency traffic.</li>
-        <li>Gemini Flash Live: positioned for realtime voice and multimodal sessions with explicit audio pricing.</li>
-      </ul>
-    </section>
-
-    <section class="card rounded-2xl p-6 space-y-3 text-sm muted">
-      <h2 class="text-2xl font-semibold text-white">Sources used</h2>
-      <p>This site is a manually curated synthesis of current public model pages, pricing docs, and third-party benchmark summaries. Verify final production pricing before committing budget.</p>
-      <ul class="list-disc pl-6 space-y-1">
-        <li><a href="https://openai.com/api/pricing/">OpenAI API pricing</a></li>
-        <li><a href="https://developers.openai.com/api/docs/pricing">OpenAI developer pricing docs</a></li>
-        <li><a href="https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-1-flash-lite">Vertex AI Gemini 3.1 Flash-Lite</a></li>
-        <li><a href="https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite-preview">Gemini 3.1 Flash-Lite preview</a></li>
-        <li><a href="https://ai.google.dev/gemini-api/docs/pricing">Gemini API pricing</a></li>
-        <li><a href="https://docs.cloud.google.com/vertex-ai/generative-ai/docs/partner-models/claude/opus-4-6">Claude Opus 4.6 on Vertex AI</a></li>
-      </ul>
-    </section>
-  </div>
-
+  <div class="mobile-nav"><div class="brand"><div class="logo" aria-hidden="true"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Router logo"><path d="M4 7h7l3-3 6 6-3 3v7H4z"/><path d="M7 10h4"/><path d="M7 14h7"/></svg></div><div><strong>Model Router</strong></div></div></div>
+  <div class="shell"><aside class="sidebar"><div><div class="brand"><div class="logo"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="Model Router"><path d="M4 7h7l3-3 6 6-3 3v7H4z"/><path d="M7 10h4"/><path d="M7 14h7"/></svg></div><div><div style="font-weight:800">Model Router</div><div class="small faint">Frontier + open model routing</div></div></div></div><nav class="nav" aria-label="Sections"><a href="#overview" class="active"><i data-lucide="layout-dashboard"></i>Overview</a><a href="#router"><i data-lucide="git-compare-arrows"></i>Workload router</a><a href="#calculator"><i data-lucide="calculator"></i>Usage calculator</a><a href="#matrix"><i data-lucide="table-properties"></i>Value matrix</a><a href="#notes"><i data-lucide="scroll-text"></i>Release notes</a></nav><div class="panel card"><div class="small faint">Default picks</div><div style="margin-top:10px;display:grid;gap:10px"><div><strong>Claude Opus 4.6</strong><div class="small muted">Best coding agent</div></div><div><strong>GPT-5.4</strong><div class="small muted">Best long context + computer use</div></div><div><strong>Gemini Flash-Lite</strong><div class="small muted">Best cheap traffic</div></div><div><strong>Gemini Flash Live</strong><div class="small muted">Best voice / realtime</div></div></div></div></aside>
+    <main class="main"><section class="topbar" id="overview"><div><span class="eyebrow"><i data-lucide="sparkles" style="width:14px;height:14px"></i>Workload-specific routing</span><h1 style="font-size:var(--text-xl);margin:14px 0 12px">Use the right model for the job, not the loudest one.</h1><p class="muted">This dashboard maps frontier and leading open models to the workloads that actually matter in production: coding agents, long-context research, voice, computer use, and cost-sensitive traffic.</p></div><button class="theme-btn" data-theme-toggle aria-label="Switch theme"><i data-lucide="sun-moon"></i><span>Theme</span></button></section>
+      <section class="panel hero reveal"><div><div class="small faint">Recommended stack</div><h2 style="font-size:clamp(2rem,1.3rem + 2vw,3.7rem);margin:10px 0 16px">Claude for code, GPT for giant context, Gemini for scale.</h2><p class="muted">Open models step in when privacy, fine-tuning, or amortized infra economics beat API convenience. The router below makes those tradeoffs explicit instead of hand-wavy.</p></div><div class="panel card" style="background:color-mix(in oklab,var(--color-surface-offset) 88%, transparent)"><div class="small faint">Fast read</div><div style="display:grid;gap:12px;margin-top:12px"><div><span class="badge good">Secret best deal</span><div style="margin-top:6px"><strong>Gemini 3.1 Flash-Lite</strong><div class="small muted">Bulk extraction, agent loops, low-latency text</div></div></div><div><span class="badge warn">Worth it only if quality pays</span><div style="margin-top:6px"><strong>Claude Opus 4.6</strong><div class="small muted">Expensive, but a real coding edge in high-stakes repos</div></div></div><div><span class="badge bad">Can be overpriced</span><div style="margin-top:6px"><strong>GPT-5.4</strong><div class="small muted">Use when context or UI automation changes the outcome</div></div></div></div></div></section>
+      <section class="kpis reveal"><div class="panel card"><div class="small faint">Coding winner</div><div class="kpi-value">Claude Opus 4.6</div><div class="muted small">Best fit for repo-scale agents</div></div><div class="panel card"><div class="small faint">Context winner</div><div class="kpi-value">GPT-5.4</div><div class="muted small">1.05M-token class</div></div><div class="panel card"><div class="small faint">Voice winner</div><div class="kpi-value">Flash Live</div><div class="muted small">Realtime multimodal pricing</div></div><div class="panel card"><div class="small faint">Cheap traffic</div><div class="kpi-value">Flash-Lite</div><div class="muted small">Best API economics</div></div></section>
+      <section class="grid-2" id="router"><div class="panel card router reveal"><div style="display:flex;justify-content:space-between;align-items:end;gap:16px;margin-bottom:10px"><div><h2 style="font-size:var(--text-lg);margin:0">Workload router</h2><p class="muted small">Where each model actually wins.</p></div></div><div class="table-wrap"><table><thead><tr><th>Workload</th><th>Winner</th><th>Runner-up</th><th>Why</th></tr></thead><tbody><tr><td>Coding agents</td><td><strong>Claude Opus 4.6</strong></td><td>GPT-5.4</td><td>Best fit for difficult repo work, multi-file reasoning, and terminal-agent execution.</td></tr><tr><td>Long-context research</td><td><strong>GPT-5.4</strong></td><td>Claude Opus 4.6</td><td>Context ceiling is the decisive advantage; use Claude when depth of synthesis matters more than breadth.</td></tr><tr><td>Voice / realtime</td><td><strong>Gemini Flash Live</strong></td><td>GPT realtime family</td><td>Directly priced for live multimodal sessions with audio-specific economics.</td></tr><tr><td>Computer use</td><td><strong>GPT-5.4</strong></td><td>Claude Opus 4.6</td><td>Best public claims for OSWorld-style computer-use tasks in this comparison class.</td></tr><tr><td>Cost-sensitive production</td><td><strong>Gemini 3.1 Flash-Lite</strong></td><td>Open models</td><td>Best hosted price/performance; open models win only when infra is already a solved problem.</td></tr></tbody></table></div></div><div class="panel card reveal"><h2 style="font-size:var(--text-lg);margin-top:0">Category scorecard</h2><p class="muted small">Higher is better. This is a routing heuristic, not a pure benchmark score.</p><canvas id="radarChart" height="300" aria-label="Model category scorecard chart"></canvas></div></section>
+      <section class="grid-2" id="calculator"><div class="panel card reveal"><h2 style="font-size:var(--text-lg);margin-top:0">Exact usage calculator</h2><p class="muted small">Set the token and voice mix you actually expect each month. GPT-5.4 long-context surcharge applies if average prompt size exceeds 272K tokens.</p><div class="inputs"><div><label for="inputTokens">Monthly input tokens</label><input id="inputTokens" type="number" value="50000000"></div><div><label for="outputTokens">Monthly output tokens</label><input id="outputTokens" type="number" value="10000000"></div><div><label for="avgPrompt">Average prompt size</label><input id="avgPrompt" type="number" value="32000"></div><div><label for="voiceMinutes">Voice minutes / month</label><input id="voiceMinutes" type="number" value="0"></div></div><div class="results" id="calcResults"></div></div><div class="panel card reveal"><h2 style="font-size:var(--text-lg);margin-top:0">Traffic economics</h2><p class="muted small">Monthly cost estimate from your current inputs.</p><canvas id="barChart" height="300" aria-label="Monthly cost comparison chart"></canvas><div id="calcHint" class="small faint" style="margin-top:12px"></div></div></section>
+      <section class="panel card matrix reveal" id="matrix"><div style="display:flex;justify-content:space-between;gap:16px;align-items:end;margin-bottom:6px;flex-wrap:wrap"><div><h2 style="font-size:var(--text-lg);margin:0">Value matrix</h2><p class="muted small">The blunt version: where each model is overpriced, overrated, or secretly the best deal.</p></div></div><div class="table-wrap"><table><thead><tr><th>Model</th><th>Input</th><th>Output</th><th>Context</th><th>Best at</th><th>Verdict</th><th>Take</th></tr></thead><tbody><tr><td><strong>GPT-5.4</strong></td><td>$2.50 / 1M, then $5.00 beyond 272K avg prompt</td><td>$15.00 / 1M</td><td>1.05M</td><td>Computer use, giant-context research</td><td><span class="badge bad">Often overpriced</span></td><td>Do not use as your default bulk model. Use it where context or UI automation changes business outcomes.</td></tr><tr><td><strong>Claude Opus 4.6</strong></td><td>$5.00 / 1M</td><td>$25.00 / 1M</td><td>1M input / 128K output</td><td>Coding agents, high-trust synthesis</td><td><span class="badge warn">Worth it selectively</span></td><td>Expensive, but failures cost more than tokens on difficult engineering tasks.</td></tr><tr><td><strong>Gemini 3.1 Flash-Lite</strong></td><td>$0.25 / 1M</td><td>$1.50 / 1M</td><td>High-scale efficient class</td><td>Cheap traffic, extraction, classification</td><td><span class="badge good">Secret best deal</span></td><td>The sensible default for high-volume production unless quality gaps become measurable.</td></tr><tr><td><strong>Gemini Flash Live</strong></td><td>$0.50 text / $3.00 audio</td><td>$2.00 text / $12.00 audio</td><td>Realtime multimodal</td><td>Voice products, live assistants</td><td><span class="badge good">Best voice buy</span></td><td>Not a general text default, but very strong when the interface is live audio-first.</td></tr><tr><td><strong>DeepSeek reasoning class</strong></td><td>Vendor/self-host dependent</td><td>Vendor/self-host dependent</td><td>Deployment-dependent</td><td>Reasoning on amortized infra</td><td><span class="badge good">Underrated</span></td><td>Wins when privacy, caching, or self-host economics matter more than managed API polish.</td></tr><tr><td><strong>Qwen coding class</strong></td><td>Vendor/self-host dependent</td><td>Vendor/self-host dependent</td><td>Deployment-dependent</td><td>Open coding and customization</td><td><span class="badge good">Quietly strong</span></td><td>Best open option for teams that want control, fine-tuning, and decent coding behavior.</td></tr></tbody></table></div></section>
+      <section class="grid-2" id="notes"><div class="panel card reveal"><h2 style="font-size:var(--text-lg);margin-top:0">Benchmark claims snapshot</h2><div style="display:grid;gap:12px"><div class="result-row"><div><strong>GPT-5.4</strong><div class="small muted">OSWorld and SWE-Bench Pro claims</div></div><div style="text-align:right"><strong>75% / 57.7%</strong></div></div><div class="result-row"><div><strong>Claude Opus 4.6</strong><div class="small muted">SWE-Bench Verified / Terminal-Bench 2.0 / OSWorld</div></div><div style="text-align:right"><strong>80.84% / 65.4% / 72.7%</strong></div></div><div class="result-row"><div><strong>Gemini 3.1 Flash-Lite</strong><div class="small muted">Speed and efficiency framing</div></div><div style="text-align:right"><strong>2.5× faster TTFT</strong></div></div></div></div><div class="panel card reveal"><h2 style="font-size:var(--text-lg);margin-top:0">Release notes snapshot</h2><div style="display:grid;gap:14px" class="small"><div><strong>GPT-5.4</strong><div class="muted">Expanded context to the 1.05M range, added pricing step-up beyond 272K context, and leaned into computer-use messaging.</div></div><div><strong>Claude Opus 4.6</strong><div class="muted">February 2026 class release with 1M input / 128K output, stronger coding-agent messaging, and deeper multi-agent positioning.</div></div><div><strong>Gemini 3.1 Flash-Lite</strong><div class="muted">March 2026 preview focused on low-cost, high-throughput production workloads.</div></div><div><strong>Gemini Flash Live</strong><div class="muted">Positioned for realtime multimodal and voice scenarios with explicit audio pricing.</div></div></div></div></section>
+      <section class="panel footer-note reveal"><strong>Notes</strong><p class="muted">This dashboard is designed as a decision surface, not a vendor brochure. Before committing real spend, verify pricing and benchmark methodology against official model pages, product docs, and contract-tier pricing.</p></section></main></div>
   <script>
-    const models = [
-      { name:'GPT-5.4', in:2.5, out:15, surchargeThreshold:272000, surchargeIn:5 },
-      { name:'Claude Opus 4.6', in:5, out:25 },
-      { name:'Gemini 3.1 Flash-Lite', in:0.25, out:1.5 },
-      { name:'Gemini Flash Live (text)', in:0.5, out:2 },
-      { name:'Gemini Flash Live (audio)', in:3, out:12, perMinute:0.018 }
-    ];
-
-    function dollars(n){ return '$' + n.toFixed(2); }
-
-    function calculate(){
-      const input = Number(document.getElementById('inputTokens').value || 0);
-      const output = Number(document.getElementById('outputTokens').value || 0);
-      const avgPrompt = Number(document.getElementById('avgPrompt').value || 0);
-      const voiceMinutes = Number(document.getElementById('voiceMinutes').value || 0);
-      const overThreshold = avgPrompt > 272000;
-
-      const rows = models.map(m => {
-        let inRate = m.in;
-        if (m.name === 'GPT-5.4' && overThreshold) inRate = m.surchargeIn;
-        let total = (input/1e6)*inRate + (output/1e6)*m.out;
-        if (m.perMinute && voiceMinutes > 0) total += voiceMinutes * m.perMinute;
-        return { ...m, inRate, total };
-      }).sort((a,b)=>a.total-b.total);
-
-      document.getElementById('calcResults').innerHTML = rows.map((r, idx) =>
-        `<div class="flex items-center justify-between pill rounded-xl px-4 py-3">
-          <div><div class="font-medium">${idx+1}. ${r.name}</div><div class="text-sm muted">Input ${r.inRate}/1M • Output ${r.out}/1M</div></div>
-          <div class="text-xl font-semibold">${dollars(r.total)}</div>
-        </div>`
-      ).join('') + (overThreshold ? `<p class="warn text-sm">GPT-5.4 long-context surcharge applied because average prompt size exceeds 272K tokens.</p>` : '');
-    }
-
-    ['inputTokens','outputTokens','avgPrompt','voiceMinutes'].forEach(id => {
-      document.getElementById(id).addEventListener('input', calculate);
-    });
-    calculate();
+    const models=[{name:'GPT-5.4',inRate:2.5,outRate:15,longInRate:5,threshold:272000,color:'#7ab5dd'},{name:'Claude Opus 4.6',inRate:5,outRate:25,color:'#e4ab53'},{name:'Gemini 3.1 Flash-Lite',inRate:0.25,outRate:1.5,color:'#89c166'},{name:'Gemini Flash Live (text)',inRate:0.5,outRate:2,color:'#68b7c1'},{name:'Gemini Flash Live (audio)',inRate:3,outRate:12,perMinute:0.018,color:'#b590e2'}];
+    const radarData={labels:['Coding','Long context','Voice','Computer use','Cost efficiency'],datasets:[{label:'GPT-5.4',data:[8,10,6,10,3],borderColor:'#7ab5dd',backgroundColor:'rgba(122,181,221,.14)'},{label:'Claude Opus 4.6',data:[10,8,3,8,2],borderColor:'#e4ab53',backgroundColor:'rgba(228,171,83,.12)'},{label:'Gemini Flash-Lite',data:[5,6,4,4,10],borderColor:'#89c166',backgroundColor:'rgba(137,193,102,.12)'},{label:'Flash Live',data:[4,4,10,4,8],borderColor:'#68b7c1',backgroundColor:'rgba(104,183,193,.1)'}]};
+    let barChart; const dollars=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(n);
+    function calculateCosts(){const input=Number(document.getElementById('inputTokens').value||0);const output=Number(document.getElementById('outputTokens').value||0);const avgPrompt=Number(document.getElementById('avgPrompt').value||0);const voiceMinutes=Number(document.getElementById('voiceMinutes').value||0);const rows=models.map(m=>{const inRate=m.name==='GPT-5.4'&&avgPrompt>m.threshold?m.longInRate:m.inRate;let total=(input/1e6)*inRate+(output/1e6)*m.outRate;if(m.perMinute&&voiceMinutes>0) total+=voiceMinutes*m.perMinute;return {...m,effectiveInRate:inRate,total};}).sort((a,b)=>a.total-b.total);document.getElementById('calcResults').innerHTML=rows.map((r,i)=>`<div class="result-row"><div><div><strong>${i+1}. ${r.name}</strong></div><div class="small muted">Input ${r.effectiveInRate}/1M • Output ${r.outRate}/1M</div></div><div style="text-align:right"><strong>${dollars(r.total)}</strong></div></div>`).join('');document.getElementById('calcHint').textContent=avgPrompt>272000?'GPT-5.4 long-context surcharge is active because average prompt size exceeds 272K tokens.':'GPT-5.4 is using the base input rate because average prompt size is within the lower pricing tier.';const labels=rows.map(r=>r.name);const data=rows.map(r=>Number(r.total.toFixed(2)));const colors=rows.map(r=>r.color);if(barChart){barChart.data.labels=labels;barChart.data.datasets[0].data=data;barChart.data.datasets[0].backgroundColor=colors;barChart.update();}}
+    function initCharts(){const commonTicks={color:getComputedStyle(document.documentElement).getPropertyValue('--color-text-muted').trim()};new Chart(document.getElementById('radarChart'),{type:'radar',data:radarData,options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:10,ticks:{display:false},grid:{color:'rgba(255,255,255,0.08)'},pointLabels:{color:commonTicks.color,font:{size:12}}}},plugins:{legend:{labels:{color:commonTicks.color,boxWidth:14}}}}});barChart=new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:[],datasets:[{label:'Monthly cost',data:[],borderRadius:10,backgroundColor:[]}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:commonTicks,grid:{display:false}},y:{ticks:commonTicks,grid:{color:'rgba(255,255,255,0.08)'}}}}});}
+    function setTheme(next){document.documentElement.setAttribute('data-theme',next)}
+    window.addEventListener('DOMContentLoaded',()=>{lucide.createIcons();const prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;setTheme(prefersDark?'dark':'light');document.querySelector('[data-theme-toggle]').addEventListener('click',()=>{const next=document.documentElement.getAttribute('data-theme')==='dark'?'light':'dark';setTheme(next)});initCharts();['inputTokens','outputTokens','avgPrompt','voiceMinutes'].forEach(id=>document.getElementById(id).addEventListener('input',calculateCosts));calculateCosts();});
   </script>
 </body>
 </html>
