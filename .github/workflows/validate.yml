@@ -1,0 +1,104 @@
+name: validate
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate:
+    name: validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Validate models.json schema
+        run: |
+          node - <<'EOF'
+          const fs   = require('fs');
+          const path = require('path');
+
+          const file = path.join(process.cwd(), 'data', 'models.json');
+          if (!fs.existsSync(file)) {
+            console.error('ERROR: data/models.json not found');
+            process.exit(1);
+          }
+
+          let data;
+          try { data = JSON.parse(fs.readFileSync(file, 'utf8')); }
+          catch (e) { console.error('ERROR: data/models.json is not valid JSON:', e.message); process.exit(1); }
+
+          if (!Array.isArray(data.models)) {
+            console.error('ERROR: data/models.json must have a top-level "models" array');
+            process.exit(1);
+          }
+
+          const REQUIRED = ['id','name','provider','contextWindow','bestAt','verdict','verdictLabel','take'];
+          const RADAR    = ['coding','longContext','voice','computerUse','costEfficiency'];
+          let errors = 0;
+
+          data.models.forEach((m, i) => {
+            const missing = REQUIRED.filter(f => !m[f]);
+            if (missing.length) {
+              console.error(`Model[${i}] ("${m.id || 'unknown'}") missing required fields: ${missing.join(', ')}`);
+              errors++;
+            }
+            if (m.radar) {
+              const mr = RADAR.filter(k => m.radar[k] === undefined);
+              if (mr.length) {
+                console.error(`Model[${i}] ("${m.id}") radar missing: ${mr.join(', ')}`);
+                errors++;
+              }
+              RADAR.forEach(k => {
+                if (m.radar[k] !== undefined && (m.radar[k] < 0 || m.radar[k] > 10)) {
+                  console.error(`Model[${i}] ("${m.id}") radar.${k} out of range 0-10: ${m.radar[k]}`);
+                  errors++;
+                }
+              });
+            }
+            const VALID_VERDICTS = ['good', 'warn', 'bad'];
+            if (m.verdict && !VALID_VERDICTS.includes(m.verdict)) {
+              console.error(`Model[${i}] ("${m.id}") invalid verdict "${m.verdict}" — must be one of: ${VALID_VERDICTS.join(', ')}`);
+              errors++;
+            }
+          });
+
+          if (errors > 0) {
+            console.error(`\n${errors} validation error(s) found in data/models.json`);
+            process.exit(1);
+          }
+          console.log(`✓ data/models.json valid — ${data.models.length} models passed schema check`);
+          EOF
+
+      - name: Check index.html exists and is non-empty
+        run: |
+          if [ ! -f index.html ]; then
+            echo "ERROR: index.html not found"
+            exit 1
+          fi
+          SIZE=$(wc -c < index.html)
+          if [ "$SIZE" -lt 1000 ]; then
+            echo "ERROR: index.html is suspiciously small ($SIZE bytes)"
+            exit 1
+          fi
+          echo "✓ index.html present ($SIZE bytes)"
+
+      - name: Check required assets exist
+        run: |
+          MISSING=0
+          for f in assets/logo.svg assets/favicon.svg data/models.json; do
+            if [ ! -f "$f" ]; then
+              echo "ERROR: required file missing: $f"
+              MISSING=$((MISSING+1))
+            else
+              echo "✓ $f"
+            fi
+          done
+          if [ "$MISSING" -gt 0 ]; then exit 1; fi

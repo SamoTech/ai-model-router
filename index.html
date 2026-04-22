@@ -562,7 +562,8 @@
     function setTheme(next) {
       currentTheme = next;
       applyThemeTokens(next);
-      if (modelData.length) { initRadar(); calculateCosts(); }
+      /* Theme change requires full chart re-init to pick up new CSS color vars */
+      if (modelData.length) { destroyCharts(); initRadar(); calculateCosts(); }
     }
 
     /* ─── State ─── */
@@ -570,7 +571,6 @@
     let barChart         = null;
     let radarChart       = null;
     let radarSelectedIds = [];
-    let calcDebounceTimer = null;
 
     /* Active filters: null = no filter active */
     let filterProvider = null;  /* string | null */
@@ -600,7 +600,6 @@
     function restoreFromHash() {
       const p = new URLSearchParams((location.hash || '').replace(/^#/, ''));
       CALC_PARAMS.forEach(id => { const v = p.get(id); if (v !== null) document.getElementById(id).value = v; });
-      /* Filter state is restored after data loads in applyFilterFromHash() */
       return p;
     }
 
@@ -628,13 +627,6 @@
     }
 
     /* ─── Filter logic ─── */
-    function filteredModels() {
-      return modelData.filter(m =>
-        (filterProvider === null || m.provider === filterProvider) &&
-        (filterVerdict  === null || m.verdict  === filterVerdict)
-      );
-    }
-
     function setProviderFilter(value, sync) {
       filterProvider = (filterProvider === value) ? null : value;
       if (sync !== false) { renderFilteredMatrix(); updateFilterUI(); syncHash(); }
@@ -655,11 +647,9 @@
 
     /* ─── Build provider filter chips from JSON (no hardcoding) ─── */
     function buildProviderFilters() {
-      /* Deduplicate providers in JSON order, collapse open/self-host variants */
       const seen = new Set();
       const providers = [];
       modelData.forEach(m => {
-        /* Group "Meta / hosted vendors" and "Open / self-host" under a single "Open" label */
         const label = (m.provider === 'Meta / hosted vendors' || m.provider === 'Open / self-host')
           ? 'Open' : m.provider;
         if (!seen.has(label)) { seen.add(label); providers.push(label); }
@@ -672,12 +662,6 @@
       container.querySelectorAll('[data-provider]').forEach(btn =>
         btn.addEventListener('click', () => setProviderFilter(btn.dataset.provider))
       );
-    }
-
-    /* Resolve display label back to actual provider strings in JSON */
-    function resolveProviderFilter(label) {
-      if (label !== 'Open') return m => m.provider === label;
-      return m => m.provider === 'Meta / hosted vendors' || m.provider === 'Open / self-host';
     }
 
     function filteredModelsResolved() {
@@ -717,24 +701,20 @@
         </tr>`).join('');
     }
 
-    /* Alias for initial full render */
     function renderMatrix() { renderFilteredMatrix(); }
 
     /* ─── Update filter chip active states + count badge + clear button ─── */
     function updateFilterUI() {
-      /* Provider chips */
       document.querySelectorAll('[data-provider]').forEach(btn => {
         const active = btn.dataset.provider === filterProvider;
         btn.classList.toggle('active', active);
         btn.setAttribute('aria-pressed', active);
       });
-      /* Verdict chips */
       document.querySelectorAll('[data-verdict]').forEach(btn => {
         const active = btn.dataset.verdict === filterVerdict;
         btn.classList.toggle('active', active);
         btn.setAttribute('aria-pressed', active);
       });
-      /* Active count badge */
       const count = (filterProvider ? 1 : 0) + (filterVerdict ? 1 : 0);
       const badge = document.getElementById('filterCount');
       if (count > 0) {
@@ -743,7 +723,6 @@
       } else {
         badge.style.display = 'none';
       }
-      /* Clear button */
       const clearBtn = document.getElementById('filterClearBtn');
       clearBtn.classList.toggle('visible', count > 0);
       if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
@@ -808,7 +787,7 @@
         btn.style.color = active ? m.color : '';
         btn.setAttribute('aria-pressed', active);
       });
-      initRadar();
+      updateRadar();
     }
 
     function destroyCharts() {
@@ -816,6 +795,7 @@
       if (barChart)   { barChart.destroy();  barChart  = null; }
     }
 
+    /* ─── initRadar: create instance once; reuse on subsequent calls ─── */
     function initRadar() {
       if (typeof Chart === 'undefined') return;
       const labels = ['Coding', 'Long context', 'Voice', 'Computer use', 'Cost efficiency'];
@@ -824,7 +804,16 @@
         data: [m.radar.coding, m.radar.longContext, m.radar.voice, m.radar.computerUse, m.radar.costEfficiency],
         borderColor: m.color, backgroundColor: m.color + '22',
       }));
-      if (radarChart) radarChart.destroy();
+
+      if (radarChart) {
+        /* Reuse existing instance — update data in place, no flicker */
+        radarChart.data.datasets = datasets;
+        radarChart.options.scales.r.pointLabels.color = colorVar('--color-text-muted');
+        radarChart.options.plugins.legend.labels.color = colorVar('--color-text-muted');
+        radarChart.update('none');
+        return;
+      }
+
       radarChart = new Chart(document.getElementById('radarChart'), {
         type: 'radar', data: { labels, datasets },
         options: {
@@ -833,6 +822,19 @@
           plugins: { legend: { labels: { color: colorVar('--color-text-muted'), boxWidth: 14 } } }
         }
       });
+    }
+
+    /* ─── updateRadar: mutate datasets on chip toggle, never destroy ─── */
+    function updateRadar() {
+      if (!radarChart) { initRadar(); return; }
+      radarChart.data.datasets = modelData
+        .filter(m => m.radar && radarSelectedIds.includes(m.id))
+        .map(m => ({
+          label: m.name,
+          data: [m.radar.coding, m.radar.longContext, m.radar.voice, m.radar.computerUse, m.radar.costEfficiency],
+          borderColor: m.color, backgroundColor: m.color + '22',
+        }));
+      radarChart.update('none');
     }
 
     /* ─── Calculator ─── */
@@ -892,6 +894,7 @@
       syncHash();
     }
 
+    /* ─── Single debounce timer for calculator inputs ─── */
     let calcDebounce;
     function debouncedCalculate() { clearTimeout(calcDebounce); calcDebounce = setTimeout(calculateCosts, 300); }
 
@@ -927,7 +930,6 @@
         buildRadarControls();
         initRadar();
         calculateCosts();
-        /* Restore filters from hash after data is loaded */
         const hashParams = new URLSearchParams((location.hash || '').replace(/^#/, ''));
         applyFilterFromHash(hashParams);
       } catch (err) {
@@ -946,7 +948,6 @@
       );
       document.getElementById('filterClearBtn').addEventListener('click', clearAllFilters);
       document.getElementById('emptyStateClear').addEventListener('click', clearAllFilters);
-      /* Verdict filter chips are static HTML; wire them up now */
       document.querySelectorAll('[data-verdict]').forEach(btn =>
         btn.addEventListener('click', () => setVerdictFilter(btn.dataset.verdict))
       );
