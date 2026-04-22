@@ -62,6 +62,31 @@ jobs:
       - name: Verify changelog exists
         run: test -f CHANGELOG.md
 
+      - name: Lint HTML
+        run: |
+          npm install --save-dev htmlhint@1.1.4 --silent
+          npx htmlhint index.html --config .htmlhintrc || true
+
+      - name: Write .htmlhintrc if missing
+        run: |
+          if [ ! -f .htmlhintrc ]; then
+            cat > .htmlhintrc <<'JSON'
+          {
+            "tagname-lowercase": true,
+            "attr-lowercase": true,
+            "attr-value-double-quotes": true,
+            "doctype-first": true,
+            "tag-pair": true,
+            "spec-char-escape": false,
+            "id-unique": true,
+            "src-not-empty": true,
+            "title-require": true,
+            "alt-require": true,
+            "space-tab-mixed-disabled": "space"
+          }
+          JSON
+          fi
+
   deploy:
     needs: validate
     environment:
@@ -83,3 +108,30 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+
+  health-check:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for Pages propagation
+        run: sleep 20
+
+      - name: Check live site returns HTTP 200
+        run: |
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" https://samotech.github.io/ai-model-router/)
+          echo "HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "Health check failed — expected 200, got $STATUS"
+            exit 1
+          fi
+          echo "Health check passed."
+
+      - name: Check models.json is reachable
+        run: |
+          STATUS=$(curl -o /dev/null -s -w "%{http_code}" https://samotech.github.io/ai-model-router/data/models.json)
+          echo "models.json HTTP status: $STATUS"
+          if [ "$STATUS" != "200" ]; then
+            echo "models.json unreachable — expected 200, got $STATUS"
+            exit 1
+          fi
+          echo "models.json reachable."
