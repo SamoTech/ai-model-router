@@ -19,7 +19,6 @@
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=cabinet-grotesk@500,700,800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <!-- pinned lucide version — avoids unpkg latest resolution on every load -->
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
   <style>
     /* ─── Design tokens ─── */
@@ -173,12 +172,8 @@
       border: 1px solid color-mix(in oklab, var(--color-error) 32%, transparent); color: var(--color-error);
     }
 
-    /* ─── Chart containers — fixed height prevents unbounded growth ─── */
-    .chart-wrap {
-      position: relative;
-      height: 280px;   /* fixed pixel height — Chart.js reads this via offsetHeight */
-      width: 100%;
-    }
+    /* ─── Chart containers ─── */
+    .chart-wrap { position: relative; height: 280px; width: 100%; }
     .chart-wrap canvas { position: absolute; inset: 0; }
 
     /* ─── Radar model selector ─── */
@@ -192,6 +187,69 @@
     .radar-chip.active { color: var(--color-text); border-color: currentColor; }
     .radar-chip:hover { background: var(--color-surface-dynamic); }
 
+    /* ─── Filter bar ─── */
+    .filter-bar {
+      display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3);
+      padding: var(--space-4) 0 var(--space-3);
+    }
+    .filter-group { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+    .filter-label {
+      font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .1em;
+      color: var(--color-text-faint); margin-right: 4px; white-space: nowrap;
+    }
+    .filter-chip {
+      padding: 6px 13px; border-radius: 999px; font-size: var(--text-xs); font-weight: 600;
+      border: 1.5px solid var(--color-border);
+      background: var(--color-surface-offset); color: var(--color-text-muted);
+      cursor: pointer;
+      transition: background var(--transition-interactive), color var(--transition-interactive),
+                  border-color var(--transition-interactive), box-shadow var(--transition-interactive);
+    }
+    .filter-chip:hover { background: var(--color-surface-dynamic); color: var(--color-text); }
+    .filter-chip.active {
+      background: color-mix(in oklab, var(--color-primary) 14%, transparent);
+      border-color: var(--color-primary); color: var(--color-primary);
+    }
+    .filter-chip.verdict-good.active {
+      background: color-mix(in oklab, var(--color-success) 14%, transparent);
+      border-color: var(--color-success); color: var(--color-success);
+    }
+    .filter-chip.verdict-warn.active {
+      background: color-mix(in oklab, var(--color-warning) 14%, transparent);
+      border-color: var(--color-warning); color: var(--color-warning);
+    }
+    .filter-chip.verdict-bad.active {
+      background: color-mix(in oklab, var(--color-error) 14%, transparent);
+      border-color: var(--color-error); color: var(--color-error);
+    }
+    .filter-divider { width: 1px; height: 20px; background: var(--color-divider); margin: 0 var(--space-1); }
+    .filter-clear {
+      padding: 6px 13px; border-radius: 999px; font-size: var(--text-xs); font-weight: 600;
+      border: 1.5px solid transparent; background: transparent;
+      color: var(--color-text-faint); cursor: pointer;
+      transition: color var(--transition-interactive), background var(--transition-interactive);
+      display: none;
+    }
+    .filter-clear.visible { display: inline-flex; align-items: center; gap: 5px; }
+    .filter-clear:hover { color: var(--color-error); background: color-mix(in oklab, var(--color-error) 10%, transparent); }
+    .filter-count {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-width: 20px; height: 20px; padding: 0 6px;
+      border-radius: 999px; font-size: 11px; font-weight: 700;
+      background: var(--color-primary); color: var(--color-text-inverse);
+      margin-left: 6px; vertical-align: middle;
+    }
+
+    /* ─── Matrix empty state ─── */
+    .matrix-empty {
+      display: none; flex-direction: column; align-items: center; text-align: center;
+      padding: var(--space-16) var(--space-8); color: var(--color-text-muted);
+    }
+    .matrix-empty.visible { display: flex; }
+    .matrix-empty-icon { width: 44px; height: 44px; margin-bottom: var(--space-4); color: var(--color-text-faint); }
+    .matrix-empty h3 { color: var(--color-text); margin-bottom: var(--space-2); font-family: var(--font-display); }
+    .matrix-empty p { max-width: 34ch; margin-bottom: var(--space-5); }
+
     /* ─── Skip link ─── */
     .skip-link {
       position: absolute; top: -100%; left: var(--space-4); padding: var(--space-2) var(--space-4);
@@ -200,7 +258,7 @@
     }
     .skip-link:focus { top: var(--space-4); }
 
-    /* ─── Self-hosted badge note ─── */
+    /* ─── Calc exclusion note ─── */
     .calc-exclusion-note {
       font-size: var(--text-xs); color: var(--color-text-faint);
       margin-top: var(--space-3); padding: 10px 14px; border-radius: var(--radius-md);
@@ -227,17 +285,15 @@
       .kpis { grid-template-columns: 1fr; }
       .inputs { grid-template-columns: 1fr; }
       .topbar { flex-direction: column; }
+      .filter-bar { gap: var(--space-2); }
     }
-
     .sr-only { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border-width:0; }
   </style>
 </head>
 <body>
 
-  <!-- Skip to content -->
   <a href="#overview" class="skip-link">Skip to content</a>
 
-  <!-- Noscript fallback -->
   <noscript>
     <div style="padding:16px 24px;background:#f3f0ec;border-bottom:1px solid #dcd9d5;text-align:center;font-family:sans-serif;font-size:14px;color:#66645f;">
       ⚠️ This dashboard requires JavaScript to load model data and render charts. Please enable JavaScript to use AI Model Router.
@@ -398,12 +454,35 @@
 
       <!-- Value matrix -->
       <section class="panel card matrix" id="matrix" aria-labelledby="matrix-heading">
-        <div style="display:flex;justify-content:space-between;gap:16px;align-items:end;margin-bottom:6px;flex-wrap:wrap">
+        <div style="display:flex;justify-content:space-between;gap:16px;align-items:center;flex-wrap:wrap;margin-bottom:4px">
           <div>
-            <h2 id="matrix-heading" style="font-size:var(--text-lg);margin:0">Value matrix</h2>
+            <h2 id="matrix-heading" style="font-size:var(--text-lg);margin:0">
+              Value matrix
+              <span id="filterCount" class="filter-count" aria-live="polite" style="display:none"></span>
+            </h2>
             <p class="muted small">Pulled from <code>data/models.json</code> — update prices without rewriting the UI.</p>
           </div>
+          <button class="filter-clear" id="filterClearBtn" aria-label="Clear all filters">
+            <i data-lucide="x" style="width:13px;height:13px" aria-hidden="true"></i>
+            Clear filters
+          </button>
         </div>
+
+        <!-- Filter bar -->
+        <div class="filter-bar" role="group" aria-label="Filter value matrix">
+          <div class="filter-group">
+            <span class="filter-label">Provider</span>
+            <div id="providerFilters" style="display:flex;flex-wrap:wrap;gap:6px"></div>
+          </div>
+          <div class="filter-divider" aria-hidden="true"></div>
+          <div class="filter-group">
+            <span class="filter-label">Verdict</span>
+            <button class="filter-chip verdict-good" data-verdict="good" aria-pressed="false">Good</button>
+            <button class="filter-chip verdict-warn" data-verdict="warn" aria-pressed="false">Worth it</button>
+            <button class="filter-chip verdict-bad"  data-verdict="bad"  aria-pressed="false">Avoid</button>
+          </div>
+        </div>
+
         <div class="table-wrap">
           <table>
             <thead>
@@ -418,6 +497,22 @@
               <tr><td colspan="8" class="muted">Loading model matrix…</td></tr>
             </tbody>
           </table>
+        </div>
+
+        <!-- Empty state -->
+        <div class="matrix-empty" id="matrixEmpty" role="status" aria-live="polite">
+          <div class="matrix-empty-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" width="44" height="44" aria-hidden="true">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              <path d="M11 8v6M8 11h6" stroke-width="1.5"/>
+            </svg>
+          </div>
+          <h3>No models match these filters</h3>
+          <p>Try removing a provider or verdict filter to broaden the results.</p>
+          <button class="theme-btn" id="emptyStateClear" style="font-size:var(--text-sm)">
+            <i data-lucide="filter-x" style="width:15px;height:15px" aria-hidden="true"></i>
+            Clear all filters
+          </button>
         </div>
       </section>
 
@@ -434,7 +529,7 @@
           <div style="display:grid;gap:14px" class="small">
             <div><strong>Data source</strong><div class="muted">Static JSON file served from this repository for easy maintenance and simple Pages hosting.</div></div>
             <div><strong>Last updated</strong><div class="muted" id="updatedAt">Loading…</div></div>
-            <div><strong>Shareable state</strong><div class="muted">Calculator values are synced to the URL hash so scenarios can be bookmarked or shared.</div></div>
+            <div><strong>Shareable state</strong><div class="muted">Calculator values and active matrix filters are synced to the URL hash so scenarios can be bookmarked or shared.</div></div>
             <div><strong>CI workflow</strong><div class="muted">GitHub Actions validates the JSON schema and publishes Pages on push.</div></div>
             <div id="statusBox" class="muted">Loading dashboard data…</div>
           </div>
@@ -455,17 +550,15 @@
 
     /* ─── Theme init — synchronous, before any fetch ─── */
     let currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-
     function applyThemeTokens(theme) {
       document.documentElement.setAttribute('data-theme', theme);
       const meta = document.getElementById('themeColorMeta');
       if (meta) meta.content = theme === 'dark' ? '#12110f' : '#f7f6f2';
-      document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
-        btn.setAttribute('aria-label', 'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' mode');
-      });
+      document.querySelectorAll('[data-theme-toggle]').forEach(btn =>
+        btn.setAttribute('aria-label', 'Switch to ' + (theme === 'dark' ? 'light' : 'dark') + ' mode')
+      );
     }
     applyThemeTokens(currentTheme);
-
     function setTheme(next) {
       currentTheme = next;
       applyThemeTokens(next);
@@ -473,56 +566,145 @@
     }
 
     /* ─── State ─── */
-    let modelData = [];
-    let barChart = null;
-    let radarChart = null;
+    let modelData        = [];
+    let barChart         = null;
+    let radarChart       = null;
     let radarSelectedIds = [];
     let calcDebounceTimer = null;
 
-    /* ─── Shared Chart.js animation config — ALL animations off ─── */
+    /* Active filters: null = no filter active */
+    let filterProvider = null;  /* string | null */
+    let filterVerdict  = null;  /* 'good' | 'warn' | 'bad' | null */
+
+    /* ─── Shared Chart.js animation config ─── */
     const NO_ANIMATION = {
-      animation: false,
-      animations: false,
+      animation: false, animations: false,
       transitions: { active: { animation: { duration: 0 } } }
     };
 
     /* ─── Utilities ─── */
-    const dollars = n => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n);
-    const paramsFromHash = () => new URLSearchParams((location.hash || '').replace(/^#/, ''));
+    const dollars  = n => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n);
     const colorVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+    /* ─── URL hash state — includes calculator params AND filters ─── */
+    const CALC_PARAMS = ['inputTokens', 'outputTokens', 'avgPrompt', 'voiceMinutes'];
 
     function syncHash() {
       const p = new URLSearchParams();
-      ['inputTokens','outputTokens','avgPrompt','voiceMinutes'].forEach(id => p.set(id, document.getElementById(id).value));
+      CALC_PARAMS.forEach(id => p.set(id, document.getElementById(id).value));
+      if (filterProvider) p.set('provider', filterProvider);
+      if (filterVerdict)  p.set('verdict',  filterVerdict);
       history.replaceState(null, '', '#' + p.toString());
     }
 
     function restoreFromHash() {
-      const p = paramsFromHash();
-      ['inputTokens','outputTokens','avgPrompt','voiceMinutes'].forEach(id => {
-        const v = p.get(id);
-        if (v !== null) document.getElementById(id).value = v;
-      });
+      const p = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+      CALC_PARAMS.forEach(id => { const v = p.get(id); if (v !== null) document.getElementById(id).value = v; });
+      /* Filter state is restored after data loads in applyFilterFromHash() */
+      return p;
     }
 
+    function applyFilterFromHash(p) {
+      const prov = p.get('provider');
+      const verd = p.get('verdict');
+      if (prov) setProviderFilter(prov, false);
+      if (verd) setVerdictFilter(verd, false);
+      if (prov || verd) { renderFilteredMatrix(); updateFilterUI(); syncHash(); }
+    }
+
+    /* ─── Verdict badge helper ─── */
     function verdictBadge(v, l) { return `<span class="badge ${v}">${l}</span>`; }
 
-    /* ─── Per-entry client-side validation ─── */
+    /* ─── Per-entry validation ─── */
     const REQUIRED_FIELDS = ['id','name','provider','contextWindow','bestAt','verdict','verdictLabel','take'];
     const REQUIRED_RADAR  = ['coding','longContext','voice','computerUse','costEfficiency'];
-
     function validateEntry(m, idx) {
       const missing = REQUIRED_FIELDS.filter(f => !m[f]);
-      if (missing.length) throw new Error(`Model at index ${idx} ("${m.id || 'unknown'}") missing required fields: ${missing.join(', ')}`);
+      if (missing.length) throw new Error(`Model at index ${idx} ("${m.id || 'unknown'}") missing fields: ${missing.join(', ')}`);
       if (m.radar) {
-        const missingRadar = REQUIRED_RADAR.filter(k => m.radar[k] === undefined);
-        if (missingRadar.length) throw new Error(`Model "${m.id}" radar missing keys: ${missingRadar.join(', ')}`);
+        const mr = REQUIRED_RADAR.filter(k => m.radar[k] === undefined);
+        if (mr.length) throw new Error(`Model "${m.id}" radar missing: ${mr.join(', ')}`);
       }
     }
 
-    /* ─── Render: Value matrix ─── */
-    function renderMatrix() {
-      document.getElementById('matrixBody').innerHTML = modelData.map(m => `
+    /* ─── Filter logic ─── */
+    function filteredModels() {
+      return modelData.filter(m =>
+        (filterProvider === null || m.provider === filterProvider) &&
+        (filterVerdict  === null || m.verdict  === filterVerdict)
+      );
+    }
+
+    function setProviderFilter(value, sync) {
+      filterProvider = (filterProvider === value) ? null : value;
+      if (sync !== false) { renderFilteredMatrix(); updateFilterUI(); syncHash(); }
+    }
+
+    function setVerdictFilter(value, sync) {
+      filterVerdict = (filterVerdict === value) ? null : value;
+      if (sync !== false) { renderFilteredMatrix(); updateFilterUI(); syncHash(); }
+    }
+
+    function clearAllFilters() {
+      filterProvider = null;
+      filterVerdict  = null;
+      renderFilteredMatrix();
+      updateFilterUI();
+      syncHash();
+    }
+
+    /* ─── Build provider filter chips from JSON (no hardcoding) ─── */
+    function buildProviderFilters() {
+      /* Deduplicate providers in JSON order, collapse open/self-host variants */
+      const seen = new Set();
+      const providers = [];
+      modelData.forEach(m => {
+        /* Group "Meta / hosted vendors" and "Open / self-host" under a single "Open" label */
+        const label = (m.provider === 'Meta / hosted vendors' || m.provider === 'Open / self-host')
+          ? 'Open' : m.provider;
+        if (!seen.has(label)) { seen.add(label); providers.push(label); }
+      });
+
+      const container = document.getElementById('providerFilters');
+      container.innerHTML = providers.map(p =>
+        `<button class="filter-chip" data-provider="${p}" aria-pressed="false">${p}</button>`
+      ).join('');
+      container.querySelectorAll('[data-provider]').forEach(btn =>
+        btn.addEventListener('click', () => setProviderFilter(btn.dataset.provider))
+      );
+    }
+
+    /* Resolve display label back to actual provider strings in JSON */
+    function resolveProviderFilter(label) {
+      if (label !== 'Open') return m => m.provider === label;
+      return m => m.provider === 'Meta / hosted vendors' || m.provider === 'Open / self-host';
+    }
+
+    function filteredModelsResolved() {
+      return modelData.filter(m => {
+        const provOk = filterProvider === null ||
+          (filterProvider === 'Open'
+            ? (m.provider === 'Meta / hosted vendors' || m.provider === 'Open / self-host')
+            : m.provider === filterProvider);
+        const verdOk = filterVerdict === null || m.verdict === filterVerdict;
+        return provOk && verdOk;
+      });
+    }
+
+    /* ─── Render: filtered matrix rows + empty state ─── */
+    function renderFilteredMatrix() {
+      const rows = filteredModelsResolved();
+      const tbody = document.getElementById('matrixBody');
+      const empty = document.getElementById('matrixEmpty');
+
+      if (rows.length === 0) {
+        tbody.innerHTML = '';
+        empty.classList.add('visible');
+        if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+        return;
+      }
+      empty.classList.remove('visible');
+      tbody.innerHTML = rows.map(m => `
         <tr>
           <td><strong>${m.name}</strong></td>
           <td>${m.provider}</td>
@@ -535,6 +717,38 @@
         </tr>`).join('');
     }
 
+    /* Alias for initial full render */
+    function renderMatrix() { renderFilteredMatrix(); }
+
+    /* ─── Update filter chip active states + count badge + clear button ─── */
+    function updateFilterUI() {
+      /* Provider chips */
+      document.querySelectorAll('[data-provider]').forEach(btn => {
+        const active = btn.dataset.provider === filterProvider;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active);
+      });
+      /* Verdict chips */
+      document.querySelectorAll('[data-verdict]').forEach(btn => {
+        const active = btn.dataset.verdict === filterVerdict;
+        btn.classList.toggle('active', active);
+        btn.setAttribute('aria-pressed', active);
+      });
+      /* Active count badge */
+      const count = (filterProvider ? 1 : 0) + (filterVerdict ? 1 : 0);
+      const badge = document.getElementById('filterCount');
+      if (count > 0) {
+        badge.textContent = count;
+        badge.style.display = 'inline-flex';
+      } else {
+        badge.style.display = 'none';
+      }
+      /* Clear button */
+      const clearBtn = document.getElementById('filterClearBtn');
+      clearBtn.classList.toggle('visible', count > 0);
+      if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
+    }
+
     /* ─── Render: Sidebar picks ─── */
     function renderSidebar() {
       const picks = [
@@ -543,8 +757,9 @@
         ['Best cheap traffic', 'Gemini 3.1 Flash-Lite'],
         ['Best voice / realtime', 'Gemini Flash Live'],
       ];
-      document.getElementById('sidebarPicks').classList.remove('loading');
-      document.getElementById('sidebarPicks').innerHTML = picks.map(([label, name]) =>
+      const el = document.getElementById('sidebarPicks');
+      el.classList.remove('loading');
+      el.innerHTML = picks.map(([label, name]) =>
         `<div><strong>${name}</strong><div class="small muted">${label}</div></div>`
       ).join('');
     }
@@ -563,44 +778,28 @@
       document.getElementById('updatedAt').textContent = updated;
     }
 
-    /* ─── Radar chart with model selector ─── */
+    /* ─── Radar ─── */
     const MAX_RADAR = 6;
-
-    /* Default radar selection: the 4 category winners by ID.
-       Falls back to first 4 models if none of these IDs are found. */
     const RADAR_DEFAULT_IDS = ['claude-opus-4-6', 'gpt-5-4', 'gemini-3-1-flash-lite', 'gemini-flash-live'];
 
     function buildRadarControls() {
       const container = document.getElementById('radarControls');
       const modelsWithRadar = modelData.filter(m => m.radar);
-
-      /* Seed with category winners; fall back to first 4 if none match */
       const seedIds = RADAR_DEFAULT_IDS.filter(id => modelsWithRadar.some(m => m.id === id));
       radarSelectedIds = seedIds.length > 0 ? seedIds : modelsWithRadar.slice(0, 4).map(m => m.id);
-
       container.innerHTML = modelsWithRadar.map(m => {
         const isActive = radarSelectedIds.includes(m.id);
-        return `<button
-          class="radar-chip ${isActive ? 'active' : ''}"
-          data-model-id="${m.id}"
-          style="${isActive ? `border-color:${m.color};color:${m.color}` : ''}"
-          aria-pressed="${isActive}"
-        >${m.name}</button>`;
+        return `<button class="radar-chip ${isActive ? 'active' : ''}" data-model-id="${m.id}" style="${isActive ? `border-color:${m.color};color:${m.color}` : ''}" aria-pressed="${isActive}">${m.name}</button>`;
       }).join('');
-      container.querySelectorAll('.radar-chip').forEach(btn => {
-        btn.addEventListener('click', () => toggleRadarModel(btn.dataset.modelId));
-      });
+      container.querySelectorAll('.radar-chip').forEach(btn =>
+        btn.addEventListener('click', () => toggleRadarModel(btn.dataset.modelId))
+      );
     }
 
     function toggleRadarModel(id) {
       const idx = radarSelectedIds.indexOf(id);
-      if (idx > -1) {
-        if (radarSelectedIds.length === 1) return;
-        radarSelectedIds.splice(idx, 1);
-      } else {
-        if (radarSelectedIds.length >= MAX_RADAR) return;
-        radarSelectedIds.push(id);
-      }
+      if (idx > -1) { if (radarSelectedIds.length === 1) return; radarSelectedIds.splice(idx, 1); }
+      else { if (radarSelectedIds.length >= MAX_RADAR) return; radarSelectedIds.push(id); }
       document.querySelectorAll('.radar-chip').forEach(btn => {
         const active = radarSelectedIds.includes(btn.dataset.modelId);
         btn.classList.toggle('active', active);
@@ -620,36 +819,23 @@
     function initRadar() {
       if (typeof Chart === 'undefined') return;
       const labels = ['Coding', 'Long context', 'Voice', 'Computer use', 'Cost efficiency'];
-      const selectedModels = modelData.filter(m => m.radar && radarSelectedIds.includes(m.id));
-      const datasets = selectedModels.map(m => ({
+      const datasets = modelData.filter(m => m.radar && radarSelectedIds.includes(m.id)).map(m => ({
         label: m.name,
         data: [m.radar.coding, m.radar.longContext, m.radar.voice, m.radar.computerUse, m.radar.costEfficiency],
-        borderColor: m.color,
-        backgroundColor: m.color + '22',
+        borderColor: m.color, backgroundColor: m.color + '22',
       }));
       if (radarChart) radarChart.destroy();
       radarChart = new Chart(document.getElementById('radarChart'), {
-        type: 'radar',
-        data: { labels, datasets },
+        type: 'radar', data: { labels, datasets },
         options: {
-          ...NO_ANIMATION,
-          responsive: true, maintainAspectRatio: false,
-          scales: {
-            r: {
-              min: 0, max: 10,
-              ticks: { display: false },
-              grid: { color: 'rgba(128,128,128,0.15)' },
-              pointLabels: { color: colorVar('--color-text-muted'), font: { size: 12 } },
-            }
-          },
-          plugins: {
-            legend: { labels: { color: colorVar('--color-text-muted'), boxWidth: 14 } }
-          }
+          ...NO_ANIMATION, responsive: true, maintainAspectRatio: false,
+          scales: { r: { min: 0, max: 10, ticks: { display: false }, grid: { color: 'rgba(128,128,128,0.15)' }, pointLabels: { color: colorVar('--color-text-muted'), font: { size: 12 } } } },
+          plugins: { legend: { labels: { color: colorVar('--color-text-muted'), boxWidth: 14 } } }
         }
       });
     }
 
-    /* ─── Calculator — debounced so rapid keystrokes only fire once ─── */
+    /* ─── Calculator ─── */
     function calculateCosts() {
       if (!modelData.length) return;
       const input        = Number(document.getElementById('inputTokens').value  || 0);
@@ -657,16 +843,12 @@
       const avgPrompt    = Number(document.getElementById('avgPrompt').value    || 0);
       const voiceMinutes = Number(document.getElementById('voiceMinutes').value || 0);
       const calcModels   = modelData.filter(m => m.inputRate !== null);
-
-      /* Collect models whose long-context surcharge is active at this avgPrompt */
       const longCtxActive = [];
 
       const rows = calcModels.map(m => {
-        /* Generic long-context surcharge: applies to any model with both
-           longContextInputRate and longContextThreshold set in JSON */
-        const hasLongCtx = m.longContextInputRate != null && m.longContextThreshold != null;
+        const hasLongCtx       = m.longContextInputRate != null && m.longContextThreshold != null;
         const longCtxTriggered = hasLongCtx && avgPrompt > m.longContextThreshold;
-        const effectiveInRate = longCtxTriggered ? m.longContextInputRate : m.inputRate;
+        const effectiveInRate  = longCtxTriggered ? m.longContextInputRate : m.inputRate;
         if (longCtxTriggered) longCtxActive.push(`${m.name} (>${(m.longContextThreshold/1000).toFixed(0)}K tokens → $${m.longContextInputRate}/1M)`);
         let total = (input / 1e6) * effectiveInRate + (output / 1e6) * (m.outputRate || 0);
         if (m.perMinute && voiceMinutes > 0) total += voiceMinutes * m.perMinute;
@@ -675,10 +857,8 @@
 
       document.getElementById('calcResults').innerHTML = rows.map((r, i) =>
         `<div class="result-row">
-          <div>
-            <div><strong>${i + 1}. ${r.name}</strong></div>
-            <div class="small muted">Input $${r.effectiveInRate}/1M · Output $${r.outputRate}/1M</div>
-          </div>
+          <div><div><strong>${i + 1}. ${r.name}</strong></div>
+          <div class="small muted">Input $${r.effectiveInRate}/1M · Output $${r.outputRate}/1M</div></div>
           <div style="text-align:right"><strong>${dollars(r.total)}</strong></div>
         </div>`
       ).join('');
@@ -698,15 +878,7 @@
         barChart = new Chart(document.getElementById('barChart'), {
           type: 'bar',
           data: { labels, datasets: [{ label: 'Monthly cost', data, borderRadius: 10, backgroundColor: colors }] },
-          options: {
-            ...NO_ANIMATION,
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-              x: { ticks: { color: axisColor }, grid: { display: false } },
-              y: { ticks: { color: axisColor }, grid: { color: gridColor } }
-            }
-          }
+          options: { ...NO_ANIMATION, responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { ticks: { color: axisColor }, grid: { display: false } }, y: { ticks: { color: axisColor }, grid: { color: gridColor } } } }
         });
       } else {
         barChart.data.labels = labels;
@@ -715,15 +887,13 @@
         barChart.options.scales.x.ticks.color = axisColor;
         barChart.options.scales.y.ticks.color = axisColor;
         barChart.options.scales.y.grid.color   = gridColor;
-        barChart.update('none'); /* 'none' mode skips all animation on update */
+        barChart.update('none');
       }
       syncHash();
     }
 
-    function debouncedCalculate() {
-      clearTimeout(calcDebounceTimer);
-      calcDebounceTimer = setTimeout(calculateCosts, 300);
-    }
+    let calcDebounce;
+    function debouncedCalculate() { clearTimeout(calcDebounce); calcDebounce = setTimeout(calculateCosts, 300); }
 
     /* ─── Error rendering ─── */
     function renderError(message) {
@@ -753,9 +923,13 @@
         renderBenchmarks(data.updated || 'Unknown');
         document.getElementById('statusBox').className   = 'muted';
         document.getElementById('statusBox').textContent = `Loaded ${modelData.length} models successfully.`;
+        buildProviderFilters();
         buildRadarControls();
         initRadar();
         calculateCosts();
+        /* Restore filters from hash after data is loaded */
+        const hashParams = new URLSearchParams((location.hash || '').replace(/^#/, ''));
+        applyFilterFromHash(hashParams);
       } catch (err) {
         renderError(err.message || 'Dashboard failed to load model data.');
       }
@@ -764,13 +938,18 @@
     /* ─── Init ─── */
     function init() {
       restoreFromHash();
-      document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
-        btn.addEventListener('click', () => setTheme(currentTheme === 'dark' ? 'light' : 'dark'));
-      });
-      /* debounced input handler — prevents chart redraw on every keystroke */
-      ['inputTokens','outputTokens','avgPrompt','voiceMinutes'].forEach(id => {
-        document.getElementById(id).addEventListener('input', debouncedCalculate);
-      });
+      document.querySelectorAll('[data-theme-toggle]').forEach(btn =>
+        btn.addEventListener('click', () => setTheme(currentTheme === 'dark' ? 'light' : 'dark'))
+      );
+      CALC_PARAMS.forEach(id =>
+        document.getElementById(id).addEventListener('input', debouncedCalculate)
+      );
+      document.getElementById('filterClearBtn').addEventListener('click', clearAllFilters);
+      document.getElementById('emptyStateClear').addEventListener('click', clearAllFilters);
+      /* Verdict filter chips are static HTML; wire them up now */
+      document.querySelectorAll('[data-verdict]').forEach(btn =>
+        btn.addEventListener('click', () => setVerdictFilter(btn.dataset.verdict))
+      );
       if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
       loadData();
     }
