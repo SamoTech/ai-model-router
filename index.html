@@ -19,7 +19,8 @@
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=cabinet-grotesk@500,700,800&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+  <!-- pinned lucide version — avoids unpkg latest resolution on every load -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
   <style>
     /* ─── Design tokens ─── */
     :root, [data-theme="light"] {
@@ -171,6 +172,14 @@
       background: color-mix(in oklab, var(--color-error) 12%, transparent);
       border: 1px solid color-mix(in oklab, var(--color-error) 32%, transparent); color: var(--color-error);
     }
+
+    /* ─── Chart containers — fixed height prevents unbounded growth ─── */
+    .chart-wrap {
+      position: relative;
+      height: 280px;   /* fixed pixel height — Chart.js reads this via offsetHeight */
+      width: 100%;
+    }
+    .chart-wrap canvas { position: absolute; inset: 0; }
 
     /* ─── Radar model selector ─── */
     .radar-controls { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: var(--space-4); }
@@ -343,7 +352,9 @@
           <h2 style="font-size:var(--text-lg);margin-top:0">Category scorecard</h2>
           <p class="muted small">Higher is better. Select up to 6 models to compare on the radar.</p>
           <div class="radar-controls" id="radarControls" role="group" aria-label="Select models for radar chart"></div>
-          <canvas id="radarChart" height="300" aria-label="Model category scorecard radar chart" role="img"></canvas>
+          <div class="chart-wrap">
+            <canvas id="radarChart" aria-label="Model category scorecard radar chart" role="img"></canvas>
+          </div>
         </div>
       </section>
 
@@ -378,7 +389,9 @@
         <div class="panel card">
           <h2 style="font-size:var(--text-lg);margin-top:0">Traffic economics</h2>
           <p class="muted small">Monthly cost estimate from your current inputs.</p>
-          <canvas id="barChart" height="300" aria-label="Monthly cost comparison bar chart" role="img"></canvas>
+          <div class="chart-wrap">
+            <canvas id="barChart" aria-label="Monthly cost comparison bar chart" role="img"></canvas>
+          </div>
           <div id="calcHint" class="small faint" style="margin-top:12px" aria-live="polite"></div>
         </div>
       </section>
@@ -464,6 +477,14 @@
     let barChart = null;
     let radarChart = null;
     let radarSelectedIds = [];
+    let calcDebounceTimer = null;
+
+    /* ─── Shared Chart.js animation config — ALL animations off ─── */
+    const NO_ANIMATION = {
+      animation: false,
+      animations: false,
+      transitions: { active: { animation: { duration: 0 } } }
+    };
 
     /* ─── Utilities ─── */
     const dollars = n => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 2 }).format(n);
@@ -603,6 +624,7 @@
         type: 'radar',
         data: { labels, datasets },
         options: {
+          ...NO_ANIMATION,
           responsive: true, maintainAspectRatio: false,
           scales: {
             r: {
@@ -619,7 +641,7 @@
       });
     }
 
-    /* ─── Calculator ─── */
+    /* ─── Calculator — debounced so rapid keystrokes only fire once ─── */
     function calculateCosts() {
       if (!modelData.length) return;
       const input        = Number(document.getElementById('inputTokens').value  || 0);
@@ -634,6 +656,7 @@
         if (m.perMinute && voiceMinutes > 0) total += voiceMinutes * m.perMinute;
         return { ...m, effectiveInRate, total };
       }).sort((a, b) => a.total - b.total);
+
       document.getElementById('calcResults').innerHTML = rows.map((r, i) =>
         `<div class="result-row">
           <div>
@@ -643,20 +666,24 @@
           <div style="text-align:right"><strong>${dollars(r.total)}</strong></div>
         </div>`
       ).join('');
+
       document.getElementById('calcHint').textContent = avgPrompt > 272000
         ? 'GPT-5.4 long-context surcharge is active (avg prompt exceeds 272K tokens).'
         : 'GPT-5.4 is on base input rate (avg prompt within lower pricing tier).';
+
       if (typeof Chart === 'undefined') return;
       const labels    = rows.map(r => r.name);
       const data      = rows.map(r => Number(r.total.toFixed(2)));
       const colors    = rows.map(r => r.color);
       const axisColor = colorVar('--color-text-muted');
       const gridColor = currentTheme === 'dark' ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)';
+
       if (!barChart) {
         barChart = new Chart(document.getElementById('barChart'), {
           type: 'bar',
           data: { labels, datasets: [{ label: 'Monthly cost', data, borderRadius: 10, backgroundColor: colors }] },
           options: {
+            ...NO_ANIMATION,
             responsive: true, maintainAspectRatio: false,
             plugins: { legend: { display: false } },
             scales: {
@@ -672,9 +699,14 @@
         barChart.options.scales.x.ticks.color = axisColor;
         barChart.options.scales.y.ticks.color = axisColor;
         barChart.options.scales.y.grid.color   = gridColor;
-        barChart.update();
+        barChart.update('none'); /* 'none' mode skips all animation on update */
       }
       syncHash();
+    }
+
+    function debouncedCalculate() {
+      clearTimeout(calcDebounceTimer);
+      calcDebounceTimer = setTimeout(calculateCosts, 300);
     }
 
     /* ─── Error rendering ─── */
@@ -694,12 +726,10 @@
     /* ─── Data loader ─── */
     async function loadData() {
       try {
-        // cache:'no-cache' revalidates via ETag/Last-Modified instead of bypassing cache
         const res = await fetch('./data/models.json', { cache: 'no-cache' });
         if (!res.ok) throw new Error(`Failed to load model data (HTTP ${res.status})`);
         const data = await res.json();
         if (!data || !Array.isArray(data.models)) throw new Error('Invalid data/models.json: "models" array missing');
-        // Per-entry runtime validation
         data.models.forEach((m, idx) => validateEntry(m, idx));
         modelData = data.models;
         renderMatrix();
@@ -721,8 +751,9 @@
       document.querySelectorAll('[data-theme-toggle]').forEach(btn => {
         btn.addEventListener('click', () => setTheme(currentTheme === 'dark' ? 'light' : 'dark'));
       });
+      /* debounced input handler — prevents chart redraw on every keystroke */
       ['inputTokens','outputTokens','avgPrompt','voiceMinutes'].forEach(id => {
-        document.getElementById(id).addEventListener('input', calculateCosts);
+        document.getElementById(id).addEventListener('input', debouncedCalculate);
       });
       if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
       loadData();
