@@ -1,5 +1,5 @@
 {
-  "updated": "2026-04-19",
+  "updated": "2026-04-22",
   "models": [
     {
       "id": "gpt-5-4",
@@ -9,7 +9,7 @@
       "outputRate": 15,
       "longContextInputRate": 5,
       "longContextThreshold": 272000,
-      "contextWindow": "1.05M",
+      "contextWindow": "1.05M tokens",
       "color": "#7ab5dd",
       "bestAt": "Computer use, giant-context research",
       "verdict": "bad",
@@ -39,13 +39,13 @@
       "provider": "Google",
       "inputRate": 0.25,
       "outputRate": 1.5,
-      "contextWindow": "High-scale efficient class",
+      "contextWindow": "1M tokens",
       "color": "#89c166",
       "bestAt": "Cheap traffic, extraction, classification",
       "verdict": "good",
       "verdictLabel": "Secret best deal",
       "take": "The sensible default for high-volume production unless quality gaps become measurable.",
-      "benchmarks": { "TTFT": "2.5× faster vs Flash 2.5" },
+      "benchmarks": { "TTFT": "2.5x faster vs Flash 2.5" },
       "radar": { "coding": 5, "longContext": 6, "voice": 4, "computerUse": 4, "costEfficiency": 10 }
     },
     {
@@ -72,7 +72,7 @@
       "provider": "Mistral",
       "inputRate": 0.4,
       "outputRate": 2,
-      "contextWindow": "128K class",
+      "contextWindow": "128K tokens",
       "color": "#f29b66",
       "bestAt": "General chat, balanced enterprise workloads",
       "verdict": "good",
@@ -117,7 +117,7 @@
       "provider": "Cohere",
       "inputRate": 3,
       "outputRate": 15,
-      "contextWindow": "Enterprise RAG class",
+      "contextWindow": "128K tokens",
       "color": "#f2c14e",
       "bestAt": "Enterprise retrieval and grounded generation",
       "verdict": "warn",
