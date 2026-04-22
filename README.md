@@ -13,7 +13,7 @@
 
 <br />
 
-> Compare GPT-5.4, Claude Opus 4.6, Gemini 3.1 Flash-Lite, Gemini Flash Live, and open models.<br />
+> Compare 21 models across OpenAI, Anthropic, Google, Mistral, Cohere, xAI, Meta and open-weight providers.<br />
 > Interactive cost calculator · Shareable URL state · No build step · Zero backend.
 
 [**→ Open the dashboard**](https://samotech.github.io/ai-model-router/)
@@ -26,12 +26,30 @@
 
 Every week a new frontier model drops claiming to be the best. In practice:
 
-- **GPT-5.4** is genuinely good at computer use and giant context — but overpriced for everyday traffic
-- **Claude Opus 4.6** leads on coding agents — but at $5/$25 per 1M it is expensive unless failures are costly
-- **Gemini 3.1 Flash-Lite** is the best-kept secret for bulk production traffic at $0.25/$1.50 per 1M
-- **Open models** win when you have infra, privacy requirements, or fine-tuning needs
+- **GPT-4.1 / 4.1 Mini / 4.1 Nano** are the new OpenAI workhorse tier — from $2 down to $0.10 input per 1M, covering everything from agent coding to bulk classification
+- **o4-mini** delivers near-o3 reasoning at $1.10/$4.40 per 1M — the best reasoning-to-cost ratio in the OpenAI lineup
+- **Claude Sonnet 4.5** sits between Haiku 4 and Opus 4.6 at $3/$15 — the pragmatic Anthropic default for most coding and writing work
+- **Gemini 2.5 Pro** matches or beats Claude Sonnet on coding at $1.25/$10 with a 1M context window
+- **Gemini 2.5 Flash** at $0.15/$0.60 is the new speed-value sweet spot for medium-complexity workloads
+- **Gemini 3.1 Flash-Lite** dropped to $0.10/$0.40 — the best-kept secret for bulk production traffic
+- **Open models** (Llama 4 Maverick, DeepSeek, Qwen) win when you have infra, privacy requirements, or fine-tuning needs
 
 This dashboard makes those tradeoffs explicit with a workload router, a live cost calculator, and a value matrix pulled from a single JSON file.
+
+---
+
+## Models covered (April 2026)
+
+| Provider | Models |
+|---|---|
+| **OpenAI** | GPT-5.4, GPT-4.1, GPT-4.1 Mini, GPT-4.1 Nano, o3, o4-mini |
+| **Anthropic** | Claude Opus 4.6, Claude Sonnet 4.5, Claude Haiku 4 |
+| **Google** | Gemini 2.5 Pro, Gemini 2.5 Flash, Gemini 3.1 Flash-Lite, Gemini Flash Live |
+| **Mistral** | Mistral Medium 3, Mistral Small 3.1 |
+| **Cohere** | Command A, Command R+ |
+| **xAI** | Grok 3 |
+| **Meta / open** | Llama 4 Maverick |
+| **Open / self-host** | DeepSeek reasoning class, Qwen coding class |
 
 ---
 
@@ -40,13 +58,29 @@ This dashboard makes those tradeoffs explicit with a workload router, a live cos
 | Feature | Detail |
 |---|---|
 | 🗺️ Workload router | Maps coding / long-context / voice / computer-use / bulk traffic to winner + runner-up |
-| 💰 Cost calculator | Monthly spend per model; GPT-5.4 long-context surcharge logic built in |
+| 💰 Cost calculator | Monthly spend per model; long-context surcharge logic built in |
 | 🔗 Shareable state | Calculator inputs sync to URL hash — bookmark or share any scenario |
 | 📊 Radar scorecard | 5-dimension routing heuristic chart per model |
 | 🏷️ Value matrix | Per-model verdict badge (overpriced / worth it selectively / best deal) |
 | 🌗 Light + dark mode | Follows system preference with manual toggle |
 | 📦 Data-driven | All model data in `data/models.json` — update prices without touching the UI |
 | ⚡ Zero build step | Pure static HTML + JSON; works on any CDN or file server |
+
+---
+
+## Changelog
+
+### v1.1.1 — April 2026 (performance)
+- Disabled Chart.js animations (`animation: false`, `update('none')`) to eliminate main-thread blocking on rapid redraws
+- Added 300 ms debounce on all calculator inputs — no more per-keystroke chart redraws
+- Fixed chart canvas container height to prevent layout thrash on resize
+- Pinned Lucide to `0.469.0` on jsDelivr for instant CDN cache hits
+
+### v1.1.0 — April 2026 (review fixes)
+- Accessibility, validation, radar selector, theme init, cache strategy, and 9 additional review items resolved
+
+### v1.0.0 — April 2026
+- Initial release with 10 models
 
 ---
 
@@ -66,48 +100,46 @@ Top-level shape:
 ```jsonc
 {
   // --- Identity ---
-  "id":           "gemini-3-1-flash-lite",   // unique kebab-case slug
-  "name":         "Gemini 3.1 Flash-Lite",   // display name in all UI
-  "provider":     "Google",                   // OpenAI | Anthropic | Google | Open / self-host
+  "id":           "gemini-2-5-flash",         // unique kebab-case slug
+  "name":         "Gemini 2.5 Flash",          // display name in all UI
+  "provider":     "Google",                    // OpenAI | Anthropic | Google | Mistral | Cohere | xAI | Meta / hosted vendors | Open / self-host
 
   // --- Pricing (USD per 1M tokens, null for self-hosted / unknown) ---
-  "inputRate":              0.25,
-  "outputRate":             1.50,
-  "longContextInputRate":   5.00,   // optional — surcharge rate (GPT-5.4 only)
-  "longContextThreshold":   272000, // optional — token count where surcharge activates
-  "audioInputRate":         3.00,   // optional — Flash Live only
-  "audioOutputRate":        12.00,  // optional — Flash Live only
+  "inputRate":              0.15,
+  "outputRate":             0.60,
+  "longContextInputRate":   2.50,   // optional — surcharge rate above threshold
+  "longContextThreshold":   200000, // optional — token count where surcharge activates
+  "audioInputRate":         3.00,   // optional — voice models only
+  "audioOutputRate":        12.00,  // optional — voice models only
   "perMinute":              0.018,  // optional — voice cost per minute
 
   // --- Context ---
-  "contextWindow": "High-scale efficient class",
+  "contextWindow": "1M tokens",
 
   // --- Routing ---
-  "bestAt": "Cheap traffic, extraction, classification",
+  "bestAt": "Fast, cost-effective general tasks",
 
   // --- Verdict badge ---
   // "good" → green  |  "warn" → amber  |  "bad" → red
   "verdict":      "good",
-  "verdictLabel": "Secret best deal",
-  "take":         "The sensible default for high-volume production unless quality gaps become measurable.",
+  "verdictLabel": "Speed + value",
+  "take":         "Excellent price-performance. Beats Flash-Lite on quality while remaining far cheaper than Pro.",
 
   // --- Benchmark snapshot (any key → string value) ---
   "benchmarks": {
-    "SWEBenchVerified": "80.84%",
-    "TerminalBench2":   "65.4%",
-    "OSWorld":          "72.7%"
+    "MMLU": "85.1%"
   },
 
   // --- Radar chart scores (integer 0–10, all five keys required) ---
   "radar": {
-    "coding":         5,
-    "longContext":     6,
-    "voice":          4,
-    "computerUse":    4,
-    "costEfficiency": 10
+    "coding":         7,
+    "longContext":     8,
+    "voice":          5,
+    "computerUse":    5,
+    "costEfficiency": 9
   },
 
-  "color": "#89c166"   // hex used in radar + bar chart datasets
+  "color": "#52c26a"   // hex used in radar + bar chart datasets
 }
 ```
 
@@ -174,7 +206,7 @@ Open `http://localhost:8080`.
 |---|---|
 | UI | Vanilla HTML + CSS custom properties |
 | Charts | [Chart.js 4.4](https://www.chartjs.org/) via CDN |
-| Icons | [Lucide](https://lucide.dev/) via CDN |
+| Icons | [Lucide 0.469.0](https://lucide.dev/) via jsDelivr |
 | Fonts | Cabinet Grotesk + Satoshi via [Fontshare](https://www.fontshare.com/) |
 | Data | `data/models.json` — static, fetched at runtime |
 | Hosting | [GitHub Pages](https://pages.github.com/) |
