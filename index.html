@@ -526,7 +526,7 @@
         <tr>
           <td><strong>${m.name}</strong></td>
           <td>${m.provider}</td>
-          <td>${m.inputRate != null ? `$${m.inputRate}` : 'Vendor / self-host'}${m.longContextInputRate ? ` <span class="small faint">($${m.longContextInputRate} long-ctx)</span>` : ''}</td>
+          <td>${m.inputRate != null ? `$${m.inputRate}` : 'Vendor / self-host'}${m.longContextInputRate ? ` <span class="small faint">($${m.longContextInputRate} long-ctx &gt;${(m.longContextThreshold/1000).toFixed(0)}K)</span>` : ''}</td>
           <td>${m.outputRate != null ? `$${m.outputRate}` : 'Vendor / self-host'}${m.audioOutputRate ? ` <span class="small faint">/ $${m.audioOutputRate} audio</span>` : ''}</td>
           <td>${m.contextWindow}</td>
           <td>${m.bestAt}</td>
@@ -566,10 +566,18 @@
     /* ─── Radar chart with model selector ─── */
     const MAX_RADAR = 6;
 
+    /* Default radar selection: the 4 category winners by ID.
+       Falls back to first 4 models if none of these IDs are found. */
+    const RADAR_DEFAULT_IDS = ['claude-opus-4-6', 'gpt-5-4', 'gemini-3-1-flash-lite', 'gemini-flash-live'];
+
     function buildRadarControls() {
       const container = document.getElementById('radarControls');
       const modelsWithRadar = modelData.filter(m => m.radar);
-      radarSelectedIds = modelsWithRadar.slice(0, 4).map(m => m.id);
+
+      /* Seed with category winners; fall back to first 4 if none match */
+      const seedIds = RADAR_DEFAULT_IDS.filter(id => modelsWithRadar.some(m => m.id === id));
+      radarSelectedIds = seedIds.length > 0 ? seedIds : modelsWithRadar.slice(0, 4).map(m => m.id);
+
       container.innerHTML = modelsWithRadar.map(m => {
         const isActive = radarSelectedIds.includes(m.id);
         return `<button
@@ -649,9 +657,17 @@
       const avgPrompt    = Number(document.getElementById('avgPrompt').value    || 0);
       const voiceMinutes = Number(document.getElementById('voiceMinutes').value || 0);
       const calcModels   = modelData.filter(m => m.inputRate !== null);
+
+      /* Collect models whose long-context surcharge is active at this avgPrompt */
+      const longCtxActive = [];
+
       const rows = calcModels.map(m => {
-        const isGpt = m.id === 'gpt-5-4';
-        const effectiveInRate = isGpt && avgPrompt > (m.longContextThreshold || Infinity) ? m.longContextInputRate : m.inputRate;
+        /* Generic long-context surcharge: applies to any model with both
+           longContextInputRate and longContextThreshold set in JSON */
+        const hasLongCtx = m.longContextInputRate != null && m.longContextThreshold != null;
+        const longCtxTriggered = hasLongCtx && avgPrompt > m.longContextThreshold;
+        const effectiveInRate = longCtxTriggered ? m.longContextInputRate : m.inputRate;
+        if (longCtxTriggered) longCtxActive.push(`${m.name} (>${(m.longContextThreshold/1000).toFixed(0)}K tokens → $${m.longContextInputRate}/1M)`);
         let total = (input / 1e6) * effectiveInRate + (output / 1e6) * (m.outputRate || 0);
         if (m.perMinute && voiceMinutes > 0) total += voiceMinutes * m.perMinute;
         return { ...m, effectiveInRate, total };
@@ -667,9 +683,9 @@
         </div>`
       ).join('');
 
-      document.getElementById('calcHint').textContent = avgPrompt > 272000
-        ? 'GPT-5.4 long-context surcharge is active (avg prompt exceeds 272K tokens).'
-        : 'GPT-5.4 is on base input rate (avg prompt within lower pricing tier).';
+      document.getElementById('calcHint').textContent = longCtxActive.length > 0
+        ? 'Long-context surcharge active for: ' + longCtxActive.join('; ') + '.'
+        : 'All models on base input rates (avg prompt within standard pricing tier).';
 
       if (typeof Chart === 'undefined') return;
       const labels    = rows.map(r => r.name);
