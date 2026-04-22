@@ -61,26 +61,10 @@ This dashboard makes those tradeoffs explicit with a workload router, a live cos
 | 💰 Cost calculator | Monthly spend per model; long-context surcharge logic built in |
 | 🔗 Shareable state | Calculator inputs sync to URL hash — bookmark or share any scenario |
 | 📊 Radar scorecard | 5-dimension routing heuristic chart per model |
-| 🏷️ Value matrix | Per-model verdict badge (overpriced / worth it selectively / best deal) |
+| 🏷️ Value matrix | Per-model verdict badge (overpriced / worth it selectively / best deal) with live provider + verdict filters |
 | 🌗 Light + dark mode | Follows system preference with manual toggle |
 | 📦 Data-driven | All model data in `data/models.json` — update prices without touching the UI |
 | ⚡ Zero build step | Pure static HTML + JSON; works on any CDN or file server |
-
----
-
-## Changelog
-
-### v1.1.1 — April 2026 (performance)
-- Disabled Chart.js animations (`animation: false`, `update('none')`) to eliminate main-thread blocking on rapid redraws
-- Added 300 ms debounce on all calculator inputs — no more per-keystroke chart redraws
-- Fixed chart canvas container height to prevent layout thrash on resize
-- Pinned Lucide to `0.469.0` on jsDelivr for instant CDN cache hits
-
-### v1.1.0 — April 2026 (review fixes)
-- Accessibility, validation, radar selector, theme init, cache strategy, and 9 additional review items resolved
-
-### v1.0.0 — April 2026
-- Initial release with 10 models
 
 ---
 
@@ -95,69 +79,52 @@ Top-level shape:
 }
 ```
 
-### ModelEntry
+### ModelEntry fields
 
-```jsonc
-{
-  // --- Identity ---
-  "id":           "gemini-2-5-flash",         // unique kebab-case slug
-  "name":         "Gemini 2.5 Flash",          // display name in all UI
-  "provider":     "Google",                    // OpenAI | Anthropic | Google | Mistral | Cohere | xAI | Meta / hosted vendors | Open / self-host
+| Field | Type | Required | Description |
+|---|---|---|---|
+| `id` | string | ✅ | Unique kebab-case slug, e.g. `gemini-2-5-flash` |
+| `name` | string | ✅ | Display name shown in all UI |
+| `provider` | string | ✅ | `OpenAI` \| `Anthropic` \| `Google` \| `Mistral` \| `Cohere` \| `xAI` \| `Meta / hosted vendors` \| `Open / self-host` |
+| `inputRate` | number\|null | ✅ | USD per 1M input tokens; `null` for self-hosted |
+| `outputRate` | number\|null | ✅ | USD per 1M output tokens; `null` for self-hosted |
+| `contextWindow` | string | ✅ | Human-readable context size, e.g. `1M tokens` |
+| `color` | string | ✅ | Unique 6-digit hex `#rrggbb` — used in radar + bar charts |
+| `bestAt` | string | ✅ | One-line routing hint |
+| `verdict` | string | ✅ | `good` \| `warn` \| `bad` |
+| `verdictLabel` | string | ✅ | 2–4 word badge label |
+| `take` | string | ✅ | 1–2 sentence opinionated routing note |
+| `benchmarks` | object | — | Any key → string value, e.g. `{ "MMLU": "85.1%" }` |
+| `radar` | object | ✅ | All five keys required — see below |
+| `longContextInputRate` | number | — | Surcharge input rate above threshold |
+| `longContextThreshold` | number | — | Token count where surcharge activates |
+| `audioInputRate` | number | — | Voice models only — USD per 1M audio input tokens |
+| `audioOutputRate` | number | — | Voice models only — USD per 1M audio output tokens |
+| `perMinute` | number | — | Voice cost per minute |
 
-  // --- Pricing (USD per 1M tokens, null for self-hosted / unknown) ---
-  "inputRate":              0.15,
-  "outputRate":             0.60,
-  "longContextInputRate":   2.50,   // optional — surcharge rate above threshold
-  "longContextThreshold":   200000, // optional — token count where surcharge activates
-  "audioInputRate":         3.00,   // optional — voice models only
-  "audioOutputRate":        12.00,  // optional — voice models only
-  "perMinute":              0.018,  // optional — voice cost per minute
+### `radar` object
 
-  // --- Context ---
-  "contextWindow": "1M tokens",
+All five keys are required. Integer 0–10. CI rejects values outside this range.
 
-  // --- Routing ---
-  "bestAt": "Fast, cost-effective general tasks",
-
-  // --- Verdict badge ---
-  // "good" → green  |  "warn" → amber  |  "bad" → red
-  "verdict":      "good",
-  "verdictLabel": "Speed + value",
-  "take":         "Excellent price-performance. Beats Flash-Lite on quality while remaining far cheaper than Pro.",
-
-  // --- Benchmark snapshot (any key → string value) ---
-  "benchmarks": {
-    "MMLU": "85.1%"
-  },
-
-  // --- Radar chart scores (integer 0–10, all five keys required) ---
-  "radar": {
-    "coding":         7,
-    "longContext":     8,
-    "voice":          5,
-    "computerUse":    5,
-    "costEfficiency": 9
-  },
-
-  "color": "#52c26a"   // hex used in radar + bar chart datasets
-}
-```
-
-### Required fields
-
-Every entry must include these or the CI validation job will block the push:
-
-```
-id  name  provider  contextWindow  bestAt  verdict  verdictLabel  take
-```
+| Key | What it measures |
+|---|---|
+| `coding` | SWE-Bench score / agentic code quality |
+| `longContext` | Context window size + long-range retrieval quality |
+| `voice` | Native realtime audio capability |
+| `computerUse` | OSWorld / GUI automation score |
+| `costEfficiency` | Price per 1M tokens relative to quality delivered |
 
 ### Adding a new model
 
+See **[docs/adding-a-model.md](docs/adding-a-model.md)** for the full step-by-step guide.
+
+The short version:
 1. Copy an existing entry in `data/models.json`
-2. Fill in all required fields and any known pricing fields (`null` is fine for self-hosted)
+2. Fill in all required fields; use `null` for unknown pricing
 3. Pick a unique `color` hex not already used in the file
 4. Set all five `radar` scores (0–10)
-5. Push to `main` — CI validates the schema and redeploys Pages automatically
+5. Update the top-level `"updated"` date
+6. Commit to `main` — CI validates and redeploys automatically
 
 ---
 
@@ -172,12 +139,17 @@ ai-model-router/
 │   └── banner.svg               # 1280×640 GitHub social preview
 ├── data/
 │   └── models.json              # ✏️  Source of truth — edit this to update the dashboard
+├── docs/
+│   ├── adding-a-model.md        # Step-by-step guide for new model entries
+│   └── ci.md                    # CI pipeline documentation
 ├── .github/
 │   └── workflows/
-│       └── pages.yml            # JSON schema validation + GitHub Pages deploy
+│       └── pages.yml            # JSON schema validation + HTML lint + Pages deploy + health-check
+├── .htmlhintrc                  # HTML lint rules for CI
 ├── .nojekyll                    # Disables Jekyll so the site is served as-is
-├── LICENSE                      # MIT
-├── CONTRIBUTING.md
+├── CHANGELOG.md                 # Keep a Changelog format
+├── CONTRIBUTING.md              # Contributor guide
+├── RESEARCH.md                  # Pricing sources and model audit log
 ├── SECURITY.md
 └── README.md
 ```
@@ -211,6 +183,21 @@ Open `http://localhost:8080`.
 | Data | `data/models.json` — static, fetched at runtime |
 | Hosting | [GitHub Pages](https://pages.github.com/) |
 | CI | [GitHub Actions](https://github.com/features/actions) |
+
+---
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the full history.
+
+### Recent — April 2026
+- **CI:** Added `health-check` job (verifies live site returns HTTP 200 after every deploy)
+- **CI:** Added HTML lint step via `htmlhint` + `.htmlhintrc` config
+- **Docs:** Added `RESEARCH.md` with pricing sources and 21-model audit
+- **Docs:** Added `docs/ci.md` and `docs/adding-a-model.md`
+- **Data:** Expanded to 21 models across 9 providers
+- **UI:** Filter bar with provider + verdict chips; empty state; shareable URL hash
+- **Perf:** 300ms input debounce, chart instance reuse, pinned CDN versions
 
 ---
 
