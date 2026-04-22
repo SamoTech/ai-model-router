@@ -42,9 +42,18 @@ Check off items as they land on `main`. Add new items under the relevant milesto
 - [x] CI JSON schema updated to accept optional fields (`longContextThreshold`, `audioInputRate`, `audioOutputRate`, `perMinute`)
 - [x] `CONTRIBUTING.md` updated to reflect 21-model scope
 
+### v1.3.2 — Bug fixes (April 2026)
+- [x] **B2** — Grok 3 `inputRate` / `outputRate` set to `null`; was incorrectly included in cost calculator despite being listed in the exclusion note
+- [x] **B1** — Long-context surcharge made generic: `calculateCosts()` now applies `longContextInputRate` to any model with `longContextThreshold` set, not just GPT-5.4 by hardcoded ID. Gemini 2.5 Pro now prices correctly above 200K tokens
+- [x] **B5** — Radar defaults changed from `slice(0, 4)` (always OpenAI) to explicit category-winner seed list: Claude Opus 4.6, GPT-5.4, Gemini 3.1 Flash-Lite, Gemini Flash Live
+- [x] Value matrix long-ctx rate label now shows threshold inline (e.g. `$2.5 long-ctx >200K`)
+- [x] `calcHint` dynamically lists all models with active surcharges instead of hardcoding "GPT-5.4"
+- [x] `CHANGELOG.md` brought up to date (was 3 versions behind)
+- [x] `CONTRIBUTING.md` expanded with optional pricing fields table and self-hosted exclusion rules
+
 ---
 
-## 🔥 v1.3.2 — Filters and navigation (next)
+## 🔥 v1.3.3 — Filters and navigation (next)
 
 > Goal: make the 21-model list scannable without scrolling through every card.
 
@@ -55,7 +64,7 @@ Check off items as they land on `main`. Add new items under the relevant milesto
 
 ---
 
-## 📊 v1.3.3 — Cost chart clarity
+## 📊 v1.3.4 — Cost chart clarity
 
 > Goal: fix the linear scale breaking when o3 ($40) and Flash-Lite ($0.10) share the same axis.
 
@@ -66,7 +75,7 @@ Check off items as they land on `main`. Add new items under the relevant milesto
 
 ---
 
-## 📊 v1.3.4 — Final QA and polish
+## 📊 v1.3.5 — Final QA and polish
 
 - [ ] Verify all 21 model cards render correctly (colors, radar scores, verdict badges)
 - [ ] Verify radar selection still works across the expanded model set
