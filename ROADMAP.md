@@ -37,19 +37,42 @@ Check off items as they land on `main`. Add new items under the relevant milesto
 - [x] Total model count: 10 → 21
 - [x] Updated `README.md` with full provider/model table and changelog section
 
+### v1.3.1 — Data freshness + schema cleanup (April 2026)
+- [x] "Data last updated" badge reads `updated` field from `models.json`
+- [x] CI JSON schema updated to accept optional fields (`longContextThreshold`, `audioInputRate`, `audioOutputRate`, `perMinute`)
+- [x] `CONTRIBUTING.md` updated to reflect 21-model scope
+
 ---
 
-## 🔥 v1.3.0 — UI catches up to 21 models (next)
+## 🔥 v1.3.2 — Filters and navigation (next)
 
-> Goal: make the expanded model list actually usable in the dashboard.
+> Goal: make the 21-model list scannable without scrolling through every card.
+
+- [ ] Provider filter bar (OpenAI / Anthropic / Google / Mistral / Cohere / xAI / Open)
+- [ ] Verdict filter toggle (good / warn / bad)
+- [ ] Empty state when filters return no models
+- [ ] Keep filter state shareable in the URL hash
+
+---
+
+## 📊 v1.3.3 — Cost chart clarity
+
+> Goal: fix the linear scale breaking when o3 ($40) and Flash-Lite ($0.10) share the same axis.
+
+- [ ] Add log-scale toggle for the monthly cost bar chart
+- [ ] Make zero/near-zero values safe in log mode (clamp to a minimum positive floor)
+- [ ] Add helper text explaining why log mode exists
+- [ ] Confirm the chart still reads clearly in dark mode
+
+---
+
+## 📊 v1.3.4 — Final QA and polish
 
 - [ ] Verify all 21 model cards render correctly (colors, radar scores, verdict badges)
-- [ ] Provider filter bar (OpenAI / Anthropic / Google / Mistral / Cohere / xAI / Open)
-- [ ] Verdict filter toggle (✅ good / ⚠️ warn / ❌ bad)
-- [ ] Log scale or Y-axis cap on bar chart (o3 at $40 vs Flash-Lite at $0.40 breaks linear scale)
-- [ ] "Data last updated" badge in UI reads `updated` field from `models.json`
-- [ ] Update CI JSON schema to accept all new optional fields (`longContextThreshold`, `audioInputRate`, `audioOutputRate`, `perMinute`)
-- [ ] Update `CONTRIBUTING.md` models list to reflect all 21 providers
+- [ ] Verify radar selection still works across the expanded model set
+- [ ] Check mobile layout with long model names
+- [ ] Check dark mode contrast for new colors and badges
+- [ ] Update `ROADMAP.md` checkboxes after each merge
 
 ---
 
