@@ -996,7 +996,12 @@
         buildProviderFilters();
         buildRadarControls();
         initRadar();
-        calculateCosts();
+        /* Skip hash sync here: filterProvider/filterVerdict are still null at this point,
+         * so syncHash() would overwrite the URL with only calculator params and strip any
+         * provider/verdict params from the incoming shared/bookmarked link before
+         * applyFilterFromHash can read them. applyFilterFromHash below calls syncHash()
+         * itself once filters are applied. */
+        calculateCosts({ skipHashSync: true });
         const hashParams = new URLSearchParams((location.hash || '').replace(/^#/, ''));
         applyFilterFromHash(hashParams);
       } catch (err) {
