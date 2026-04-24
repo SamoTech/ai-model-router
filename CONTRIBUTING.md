@@ -51,7 +51,7 @@ Models without a fixed public API price (Llama 4 Maverick, Grok 3, DeepSeek V3/R
 
 - Keep `index.html` as a single file (inline CSS + JS)
 - CSS custom properties for all colors and spacing — no hardcoded hex values in component styles
-- No external runtime dependencies beyond the three CDN libraries already loaded (Chart.js, Lucide, Tailwind)
+- No external runtime dependencies beyond the two CDN libraries already loaded (Chart.js, Lucide). Both ship with SRI hashes; if you bump the pinned version you must also update the `integrity=` attribute. There is no Tailwind in this project — all styling is custom CSS in the `<style>` block in `index.html`.
 - Extract shared config into named constants (e.g. `NO_ANIMATION`, `RADAR_DEFAULT_IDS`) rather than repeating literals
 - Calculator inputs debounce at 300 ms — keep it that way; do not add immediate `input` listeners that trigger chart redraws
 
