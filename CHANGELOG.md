@@ -9,14 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Security
+- **XSS hardening of `data/models.json` rendering** — every JSON-sourced field (`name`, `provider`, `bestAt`, `take`, `verdictLabel`, `contextWindow`, benchmark keys/values, calculator rows, error messages) is now passed through an `esc()` helper before `innerHTML` interpolation. Previously, a contributor could have injected HTML via fields like `take` and executed JS on every visitor. `verdictBadge` whitelists the verdict CSS class against `good|warn|bad` instead of interpolating raw.
+- **Content Security Policy** — added a meta CSP restricting scripts to `self` + `cdn.jsdelivr.net`, styles to `self` + `fontshare`, fonts to `fontshare`, with `frame-ancestors 'none'` and `form-action 'none'`.
+- **Subresource Integrity (SRI)** — Chart.js and Lucide CDN scripts now load with `integrity=` (sha-384) and `crossorigin="anonymous"` attributes; `referrerpolicy="no-referrer"` set on both.
+- **Removed Tailwind Play CDN** — `cdn.tailwindcss.com` ships a 300 KB JIT compiler explicitly not for production. Verified zero Tailwind utility classes were actually in use; layout is custom CSS only.
+- **`scripts/validate-models.mjs`** — single source of truth for `data/models.json` validation. Includes an XSS-character scan that rejects `<`, `>`, `javascript:`, and `data:text/html` in user-facing string fields at the data layer.
+- **`validate.yml`** — added explicit `permissions: contents: read` (was inheriting repo defaults).
+
 ### Added
 - `RESEARCH.md` — pricing sources, benchmark methodology notes, and full 21-model audit
 - `docs/ci.md` — full CI pipeline documentation covering all three jobs (`validate`, `deploy`, `health-check`)
 - `docs/adding-a-model.md` — step-by-step contributor guide for adding new entries to `data/models.json`
 - `.htmlhintrc` — HTML lint configuration for CI
+- `scripts/validate-models.mjs` — consolidated JSON validator used by both workflows
+- `tests/calculator.test.mjs` — unit tests for cost-calculator math (long-context tiering, voice pricing, self-host exclusion)
+- `tests/validate-models.test.mjs` — end-to-end tests for the JSON validator
 
 ### Changed
-- `.github/workflows/pages.yml` — added `health-check` job (verifies live site and `models.json` return HTTP 200 after deploy); added `validate-html` step via `htmlhint`
+- **Theme persists to `localStorage`** — explicit theme picks now survive page refresh; falls back to `prefers-color-scheme` only when no stored preference exists.
+- **`hashchange` listener** — back/forward navigation across filter and calculator state now reflects in the UI (was previously ignored).
+- **`pages.yml`** — both workflows now invoke `scripts/validate-models.mjs` and run `node --test 'tests/*.test.mjs'`. The dead "write `.htmlhintrc` if missing" step was removed (it ran *after* the lint step that consumed it). Removed `|| true` from the htmlhint step so HTML lint failures actually block the deploy. Pages artifact now contains only `index.html`, `assets/`, `data/`, `.nojekyll` instead of the entire repo root.
+- **Client-side `validateEntry`** — now mirrors the server validator: requires `color` and `radar`, validates color format (`/^#[rrggbb]$/`), validates radar values are integers in `[0, 10]`, validates verdict is one of `good|warn|bad`.
+
+### Fixed
+- `m.longContextInputRate ? …` interpolation guard now uses `!= null` so a hypothetical `0` rate would still render correctly.
+- `validate.yml` and `pages.yml` had drifted JSON-validation rules; consolidated.
 
 ---
 

@@ -16,10 +16,21 @@
   <meta name="twitter:title" content="AI Model Router" />
   <meta name="twitter:description" content="Route workloads to the right model — not just the loudest one." />
   <meta name="twitter:image" content="https://samotech.github.io/ai-model-router/assets/banner.svg" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://api.fontshare.com; font-src 'self' https://cdn.fontshare.com https://api.fontshare.com data:; img-src 'self' data: https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'none'">
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700,900&f[]=cabinet-grotesk@500,700,800&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"
+    integrity="sha384-JUh163oCRItcbPme8pYnROHQMC6fNKTBWtRG3I3I0erJkzNgL7uxKlNwcrcFKeqF"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/lucide@0.469.0/dist/umd/lucide.min.js"
+    integrity="sha384-hJnF5AwidE18GSWTAGHv3ByzzvfNZ1Tcx5y1UUV3WkauuMCEzBJBMSwSt/PUPXnM"
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  ></script>
   <style>
     /* ─── Design tokens ─── */
     :root, [data-theme="light"] {
@@ -548,8 +559,24 @@
   <script>
     'use strict';
 
+    /* ─── HTML escape — applied to every JSON-sourced string before innerHTML ─── */
+    const ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+    function esc(v) {
+      if (v == null) return '';
+      return String(v).replace(/[&<>"']/g, c => ESC_MAP[c]);
+    }
+
     /* ─── Theme init — synchronous, before any fetch ─── */
-    let currentTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    const THEME_STORAGE_KEY = 'ai-model-router:theme';
+    function readStoredTheme() {
+      try {
+        const v = localStorage.getItem(THEME_STORAGE_KEY);
+        return v === 'dark' || v === 'light' ? v : null;
+      } catch (_) { return null; }
+    }
+    let currentTheme =
+      readStoredTheme() ||
+      (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
     function applyThemeTokens(theme) {
       document.documentElement.setAttribute('data-theme', theme);
       const meta = document.getElementById('themeColorMeta');
@@ -562,6 +589,7 @@
     function setTheme(next) {
       currentTheme = next;
       applyThemeTokens(next);
+      try { localStorage.setItem(THEME_STORAGE_KEY, next); } catch (_) { /* private mode / quota */ }
       /* Theme change requires full chart re-init to pick up new CSS color vars */
       if (modelData.length) { destroyCharts(); initRadar(); calculateCosts(); }
     }
@@ -611,18 +639,28 @@
       if (prov || verd) { renderFilteredMatrix(); updateFilterUI(); syncHash(); }
     }
 
-    /* ─── Verdict badge helper ─── */
-    function verdictBadge(v, l) { return `<span class="badge ${v}">${l}</span>`; }
+    /* ─── Verdict badge helper — verdict is whitelisted, label is escaped ─── */
+    const VALID_VERDICTS = ['good', 'warn', 'bad'];
+    function verdictBadge(v, l) {
+      const verdictClass = VALID_VERDICTS.includes(v) ? v : 'warn';
+      return `<span class="badge ${verdictClass}">${esc(l)}</span>`;
+    }
 
-    /* ─── Per-entry validation ─── */
-    const REQUIRED_FIELDS = ['id','name','provider','contextWindow','bestAt','verdict','verdictLabel','take'];
+    /* ─── Per-entry validation — mirrors scripts/validate-models.mjs ─── */
+    const REQUIRED_FIELDS = ['id','name','provider','contextWindow','bestAt','verdict','verdictLabel','take','color','radar'];
     const REQUIRED_RADAR  = ['coding','longContext','voice','computerUse','costEfficiency'];
+    const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
     function validateEntry(m, idx) {
-      const missing = REQUIRED_FIELDS.filter(f => !m[f]);
+      const missing = REQUIRED_FIELDS.filter(f => m[f] === undefined || m[f] === null || m[f] === '');
       if (missing.length) throw new Error(`Model at index ${idx} ("${m.id || 'unknown'}") missing fields: ${missing.join(', ')}`);
-      if (m.radar) {
-        const mr = REQUIRED_RADAR.filter(k => m.radar[k] === undefined);
-        if (mr.length) throw new Error(`Model "${m.id}" radar missing: ${mr.join(', ')}`);
+      if (!VALID_VERDICTS.includes(m.verdict)) throw new Error(`Model "${m.id}" invalid verdict: ${m.verdict}`);
+      if (typeof m.color !== 'string' || !COLOR_RE.test(m.color)) throw new Error(`Model "${m.id}" invalid color: ${m.color}`);
+      if (typeof m.radar !== 'object' || !m.radar) throw new Error(`Model "${m.id}" radar missing`);
+      const mr = REQUIRED_RADAR.filter(k => m.radar[k] === undefined);
+      if (mr.length) throw new Error(`Model "${m.id}" radar missing: ${mr.join(', ')}`);
+      for (const k of REQUIRED_RADAR) {
+        const val = m.radar[k];
+        if (!Number.isInteger(val) || val < 0 || val > 10) throw new Error(`Model "${m.id}" radar.${k} out of range 0-10: ${val}`);
       }
     }
 
@@ -657,7 +695,7 @@
 
       const container = document.getElementById('providerFilters');
       container.innerHTML = providers.map(p =>
-        `<button class="filter-chip" data-provider="${p}" aria-pressed="false">${p}</button>`
+        `<button class="filter-chip" data-provider="${esc(p)}" aria-pressed="false">${esc(p)}</button>`
       ).join('');
       container.querySelectorAll('[data-provider]').forEach(btn =>
         btn.addEventListener('click', () => setProviderFilter(btn.dataset.provider))
@@ -688,17 +726,28 @@
         return;
       }
       empty.classList.remove('visible');
-      tbody.innerHTML = rows.map(m => `
+      tbody.innerHTML = rows.map(m => {
+        const hasLongCtx  = m.longContextInputRate != null && m.longContextThreshold != null;
+        const inputCell   = m.inputRate != null ? `$${esc(m.inputRate)}` : 'Vendor / self-host';
+        const longCtxNote = hasLongCtx
+          ? ` <span class="small faint">($${esc(m.longContextInputRate)} long-ctx &gt;${esc((m.longContextThreshold/1000).toFixed(0))}K)</span>`
+          : '';
+        const outputCell  = m.outputRate != null ? `$${esc(m.outputRate)}` : 'Vendor / self-host';
+        const audioNote   = m.audioOutputRate != null
+          ? ` <span class="small faint">/ $${esc(m.audioOutputRate)} audio</span>`
+          : '';
+        return `
         <tr>
-          <td><strong>${m.name}</strong></td>
-          <td>${m.provider}</td>
-          <td>${m.inputRate != null ? `$${m.inputRate}` : 'Vendor / self-host'}${m.longContextInputRate ? ` <span class="small faint">($${m.longContextInputRate} long-ctx &gt;${(m.longContextThreshold/1000).toFixed(0)}K)</span>` : ''}</td>
-          <td>${m.outputRate != null ? `$${m.outputRate}` : 'Vendor / self-host'}${m.audioOutputRate ? ` <span class="small faint">/ $${m.audioOutputRate} audio</span>` : ''}</td>
-          <td>${m.contextWindow}</td>
-          <td>${m.bestAt}</td>
+          <td><strong>${esc(m.name)}</strong></td>
+          <td>${esc(m.provider)}</td>
+          <td>${inputCell}${longCtxNote}</td>
+          <td>${outputCell}${audioNote}</td>
+          <td>${esc(m.contextWindow)}</td>
+          <td>${esc(m.bestAt)}</td>
           <td>${verdictBadge(m.verdict, m.verdictLabel)}</td>
-          <td>${m.take}</td>
-        </tr>`).join('');
+          <td>${esc(m.take)}</td>
+        </tr>`;
+      }).join('');
     }
 
     function renderMatrix() { renderFilteredMatrix(); }
@@ -739,7 +788,7 @@
       const el = document.getElementById('sidebarPicks');
       el.classList.remove('loading');
       el.innerHTML = picks.map(([label, name]) =>
-        `<div><strong>${name}</strong><div class="small muted">${label}</div></div>`
+        `<div><strong>${esc(name)}</strong><div class="small muted">${esc(label)}</div></div>`
       ).join('');
     }
 
@@ -750,8 +799,10 @@
         .filter(m => prioritized.includes(m.name))
         .map(m => {
           const bm = Object.entries(m.benchmarks || {});
-          const values = bm.length ? bm.map(([k, v]) => `${k}: ${v}`).join(' · ') : 'No benchmark claims stored.';
-          return `<div class="result-row"><div><strong>${m.name}</strong><div class="small muted">${values}</div></div><div style="text-align:right"><strong>${m.provider}</strong></div></div>`;
+          const values = bm.length
+            ? bm.map(([k, v]) => `${esc(k)}: ${esc(v)}`).join(' · ')
+            : 'No benchmark claims stored.';
+          return `<div class="result-row"><div><strong>${esc(m.name)}</strong><div class="small muted">${values}</div></div><div style="text-align:right"><strong>${esc(m.provider)}</strong></div></div>`;
         }).join('');
       document.getElementById('benchmarkRows').innerHTML = rows;
       document.getElementById('updatedAt').textContent = updated;
@@ -766,9 +817,11 @@
       const modelsWithRadar = modelData.filter(m => m.radar);
       const seedIds = RADAR_DEFAULT_IDS.filter(id => modelsWithRadar.some(m => m.id === id));
       radarSelectedIds = seedIds.length > 0 ? seedIds : modelsWithRadar.slice(0, 4).map(m => m.id);
+      /* m.color is validated by validateEntry against /^#[0-9a-fA-F]{6}$/, so safe to inline in style */
       container.innerHTML = modelsWithRadar.map(m => {
         const isActive = radarSelectedIds.includes(m.id);
-        return `<button class="radar-chip ${isActive ? 'active' : ''}" data-model-id="${m.id}" style="${isActive ? `border-color:${m.color};color:${m.color}` : ''}" aria-pressed="${isActive}">${m.name}</button>`;
+        const styleAttr = isActive ? `border-color:${m.color};color:${m.color}` : '';
+        return `<button class="radar-chip ${isActive ? 'active' : ''}" data-model-id="${esc(m.id)}" style="${styleAttr}" aria-pressed="${isActive}">${esc(m.name)}</button>`;
       }).join('');
       container.querySelectorAll('.radar-chip').forEach(btn =>
         btn.addEventListener('click', () => toggleRadarModel(btn.dataset.modelId))
@@ -859,9 +912,9 @@
 
       document.getElementById('calcResults').innerHTML = rows.map((r, i) =>
         `<div class="result-row">
-          <div><div><strong>${i + 1}. ${r.name}</strong></div>
-          <div class="small muted">Input $${r.effectiveInRate}/1M · Output $${r.outputRate}/1M</div></div>
-          <div style="text-align:right"><strong>${dollars(r.total)}</strong></div>
+          <div><div><strong>${i + 1}. ${esc(r.name)}</strong></div>
+          <div class="small muted">Input $${esc(r.effectiveInRate)}/1M · Output $${esc(r.outputRate)}/1M</div></div>
+          <div style="text-align:right"><strong>${esc(dollars(r.total))}</strong></div>
         </div>`
       ).join('');
 
@@ -901,10 +954,11 @@
     /* ─── Error rendering ─── */
     function renderError(message) {
       destroyCharts();
-      document.getElementById('matrixBody').innerHTML    = `<tr><td colspan="8"><div class="error-box" role="alert">${message}</div></td></tr>`;
-      document.getElementById('benchmarkRows').innerHTML = `<div class="error-box" role="alert">${message}</div>`;
+      const safe = esc(message);
+      document.getElementById('matrixBody').innerHTML    = `<tr><td colspan="8"><div class="error-box" role="alert">${safe}</div></td></tr>`;
+      document.getElementById('benchmarkRows').innerHTML = `<div class="error-box" role="alert">${safe}</div>`;
       document.getElementById('sidebarPicks').classList.remove('loading');
-      document.getElementById('sidebarPicks').innerHTML  = `<div class="error-box" role="alert">${message}</div>`;
+      document.getElementById('sidebarPicks').innerHTML  = `<div class="error-box" role="alert">${safe}</div>`;
       document.getElementById('updatedAt').textContent   = 'Unavailable';
       document.getElementById('statusBox').className     = 'error-box';
       document.getElementById('statusBox').textContent   = message;
@@ -951,6 +1005,11 @@
       document.querySelectorAll('[data-verdict]').forEach(btn =>
         btn.addEventListener('click', () => setVerdictFilter(btn.dataset.verdict))
       );
+      window.addEventListener('hashchange', () => {
+        const p = restoreFromHash();
+        applyFilterFromHash(p);
+        if (modelData.length) calculateCosts();
+      });
       if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
       loadData();
     }
