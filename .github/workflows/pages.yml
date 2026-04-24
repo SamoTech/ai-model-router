@@ -26,38 +26,13 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: '20'
 
       - name: Validate models.json schema
-        run: |
-          node <<'EOF'
-          const fs = require('fs');
-          const path = 'data/models.json';
-          const required = ['id','name','provider','contextWindow','bestAt','verdict','verdictLabel','take','color','radar'];
-          const radarKeys = ['coding','longContext','voice','computerUse','costEfficiency'];
-          const allowedVerdicts = new Set(['good','warn','bad']);
-          const raw = fs.readFileSync(path, 'utf8');
-          const data = JSON.parse(raw);
-          if (!data || !Array.isArray(data.models)) throw new Error('models must be an array');
-          const ids = new Set();
-          const colors = new Set();
-          for (const [i, model] of data.models.entries()) {
-            for (const key of required) if (!(key in model)) throw new Error(`model[${i}] missing ${key}`);
-            if (ids.has(model.id)) throw new Error(`duplicate id: ${model.id}`);
-            ids.add(model.id);
-            if (!allowedVerdicts.has(model.verdict)) throw new Error(`invalid verdict for ${model.id}`);
-            if (!/^#[0-9a-fA-F]{6}$/.test(model.color)) throw new Error(`invalid color for ${model.id}`);
-            if (colors.has(model.color)) throw new Error(`duplicate color: ${model.color}`);
-            colors.add(model.color);
-            if (typeof model.radar !== 'object' || !model.radar) throw new Error(`radar missing for ${model.id}`);
-            for (const rk of radarKeys) {
-              if (!(rk in model.radar)) throw new Error(`radar.${rk} missing for ${model.id}`);
-              const val = model.radar[rk];
-              if (!Number.isInteger(val) || val < 0 || val > 10) throw new Error(`radar.${rk} invalid for ${model.id}`);
-            }
-          }
-          console.log(`Validated ${data.models.length} models`);
-          EOF
+        run: node scripts/validate-models.mjs
+
+      - name: Run unit tests
+        run: node --test tests/calculator.test.mjs tests/validate-models.test.mjs
 
       - name: Verify changelog exists
         run: test -f CHANGELOG.md
@@ -65,27 +40,7 @@ jobs:
       - name: Lint HTML
         run: |
           npm install --save-dev htmlhint@1.1.4 --silent
-          npx htmlhint index.html --config .htmlhintrc || true
-
-      - name: Write .htmlhintrc if missing
-        run: |
-          if [ ! -f .htmlhintrc ]; then
-            cat > .htmlhintrc <<'JSON'
-          {
-            "tagname-lowercase": true,
-            "attr-lowercase": true,
-            "attr-value-double-quotes": true,
-            "doctype-first": true,
-            "tag-pair": true,
-            "spec-char-escape": false,
-            "id-unique": true,
-            "src-not-empty": true,
-            "title-require": true,
-            "alt-require": true,
-            "space-tab-mixed-disabled": "space"
-          }
-          JSON
-          fi
+          npx htmlhint index.html --config .htmlhintrc
 
   deploy:
     needs: validate
@@ -97,13 +52,24 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Stage deployable files
+        run: |
+          mkdir -p _site
+          cp index.html _site/
+          cp .nojekyll _site/
+          cp -r assets _site/
+          cp -r data _site/
+          echo "Deploy bundle:"
+          ls -la _site/
+          du -sh _site/
+
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: .
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment

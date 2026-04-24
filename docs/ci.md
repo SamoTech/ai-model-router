@@ -24,19 +24,19 @@ Runs on `ubuntu-latest`. Steps:
 
 | Step | What it checks |
 |---|---|
-| **Validate models.json schema** | Parses `data/models.json`; enforces required fields, unique IDs, unique colors, valid verdict values (`good`/`warn`/`bad`), valid hex colors, and radar scores in range 0–10 for all five keys |
+| **Validate models.json schema** | Runs `node scripts/validate-models.mjs`. Enforces required fields, unique IDs, unique colors, allowed providers, valid verdict values (`good`/`warn`/`bad`), valid hex colors, radar scores in range 0–10 for all five keys, non-negative pricing fields, and rejects HTML-unsafe characters (`<`, `>`, `javascript:`, `data:text/html`) in user-facing string fields. Single source of truth — also used by `validate.yml`. |
+| **Run unit tests** | `node --test 'tests/*.test.mjs'` runs the calculator and validator tests. |
 | **Verify changelog exists** | Asserts `CHANGELOG.md` is present (`test -f`) |
-| **Lint HTML** | Runs `htmlhint index.html` using rules from `.htmlhintrc`; currently set to `|| true` so lint warnings are reported but do not block deploy |
+| **Lint HTML** | Runs `htmlhint index.html` using rules from `.htmlhintrc`. Failures block the deploy. |
 
 #### Running validation locally
 
 ```bash
-# JSON schema
-node -e "
-  const fs = require('fs');
-  const data = JSON.parse(fs.readFileSync('data/models.json','utf8'));
-  console.log(data.models.length + ' models found');
-"
+# JSON schema + XSS scan
+node scripts/validate-models.mjs
+
+# Unit tests
+node --test 'tests/*.test.mjs'
 
 # HTML lint
 npx htmlhint index.html --config .htmlhintrc
