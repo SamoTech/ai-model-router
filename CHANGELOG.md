@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **`hashchange` listener no longer leaves stale filter state** when navigating to a hash without `provider`/`verdict` params. Previously, activating a filter, then pressing back to a filter-less hash, would leave the filter active in state — and the subsequent `calculateCosts()` would `replaceState` the stale filter back into the URL, corrupting the history entry. `applyFilterFromHash` now resets `filterProvider`/`filterVerdict` to `null` before applying, and the hashchange handler passes `applyOnly: true` plus `skipHashSync: true` so we never `replaceState` from inside a hashchange. (Caught by Devin Review on PR #8.)
+- **`CONTRIBUTING.md`** corrected to reflect the actual two CDN libraries (Chart.js + Lucide); Tailwind was removed in PR #8 but the doc still listed it.
+
 ### Security
 - **XSS hardening of `data/models.json` rendering** — every JSON-sourced field (`name`, `provider`, `bestAt`, `take`, `verdictLabel`, `contextWindow`, benchmark keys/values, calculator rows, error messages) is now passed through an `esc()` helper before `innerHTML` interpolation. Previously, a contributor could have injected HTML via fields like `take` and executed JS on every visitor. `verdictBadge` whitelists the verdict CSS class against `good|warn|bad` instead of interpolating raw.
 - **Content Security Policy** — added a meta CSP restricting scripts to `self` + `cdn.jsdelivr.net`, styles to `self` + `fontshare`, fonts to `fontshare`, with `frame-ancestors 'none'` and `form-action 'none'`.

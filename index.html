@@ -631,12 +631,23 @@
       return p;
     }
 
-    function applyFilterFromHash(p) {
+    /* Read filters from `p` and make state match it exactly.
+     * `applyOnly` mode is for back/forward navigation: caller must NOT call
+     * syncHash() afterwards — doing so inside a hashchange handler corrupts
+     * the history entry the user just navigated to (replaceState rewrites
+     * the current entry). For initial-load mode (default), syncHash() is
+     * called so that any filter set via `setProviderFilter`/`setVerdictFilter`
+     * is reflected in the URL. */
+    function applyFilterFromHash(p, { applyOnly = false } = {}) {
+      filterProvider = null;
+      filterVerdict  = null;
       const prov = p.get('provider');
       const verd = p.get('verdict');
       if (prov) setProviderFilter(prov, false);
       if (verd) setVerdictFilter(verd, false);
-      if (prov || verd) { renderFilteredMatrix(); updateFilterUI(); syncHash(); }
+      renderFilteredMatrix();
+      updateFilterUI();
+      if (!applyOnly) syncHash();
     }
 
     /* ─── Verdict badge helper — verdict is whitelisted, label is escaped ─── */
@@ -891,7 +902,9 @@
     }
 
     /* ─── Calculator ─── */
-    function calculateCosts() {
+    /* Pass `{ skipHashSync: true }` from inside a hashchange handler so we
+     * don't replaceState() over the history entry the user just navigated to. */
+    function calculateCosts({ skipHashSync = false } = {}) {
       if (!modelData.length) return;
       const input        = Number(document.getElementById('inputTokens').value  || 0);
       const output       = Number(document.getElementById('outputTokens').value || 0);
@@ -944,7 +957,7 @@
         barChart.options.scales.y.grid.color   = gridColor;
         barChart.update('none');
       }
-      syncHash();
+      if (!skipHashSync) syncHash();
     }
 
     /* ─── Single debounce timer for calculator inputs ─── */
@@ -1007,8 +1020,8 @@
       );
       window.addEventListener('hashchange', () => {
         const p = restoreFromHash();
-        applyFilterFromHash(p);
-        if (modelData.length) calculateCosts();
+        applyFilterFromHash(p, { applyOnly: true });
+        if (modelData.length) calculateCosts({ skipHashSync: true });
       });
       if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
       loadData();
