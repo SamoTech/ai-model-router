@@ -42,7 +42,7 @@ Models without a fixed public API price (Llama 4 Maverick, Grok 3, DeepSeek V3/R
 
 ## UI changes
 
-- All dashboard logic lives in `index.html` as a self-contained static file
+- All dashboard logic lives in three sibling files (`index.html`, `assets/styles.css`, `assets/app.js`) — no build step, no framework, no bundler. See the "Code style" section below for the architecture and CSP rules.
 - No build step, no bundler, no dependencies to install
 - Test locally with `npx serve .` or `python -m http.server 8080`
 - Make sure the dashboard still loads correctly with `data/models.json` before opening a PR
