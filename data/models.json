@@ -1,5 +1,17 @@
 {
   "updated": "2026-04-22",
+  "sidebarPicks": [
+    { "modelId": "claude-opus-4-6",       "label": "Best coding agent" },
+    { "modelId": "gpt-5-4",               "label": "Best long context + computer use" },
+    { "modelId": "gemini-3-1-flash-lite", "label": "Best cheap traffic" },
+    { "modelId": "gemini-flash-live",     "label": "Best voice / realtime" }
+  ],
+  "categoryWinners": [
+    { "category": "coding",  "label": "Coding winner",  "modelId": "claude-opus-4-6",       "tagline": "Best fit for repo-scale agents" },
+    { "category": "context", "label": "Context winner", "modelId": "gpt-5-4",               "tagline": "1.05M-token class" },
+    { "category": "voice",   "label": "Voice winner",   "modelId": "gemini-flash-live",     "tagline": "Realtime multimodal pricing", "displayName": "Flash Live" },
+    { "category": "cheap",   "label": "Cheap traffic",  "modelId": "gemini-3-1-flash-lite", "tagline": "Best API economics",          "displayName": "Flash-Lite" }
+  ],
   "models": [
     {
       "id": "gpt-5-4",

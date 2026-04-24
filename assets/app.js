@@ -257,19 +257,36 @@ function updateFilterUI() {
   if (window.lucide && window.lucide.createIcons) window.lucide.createIcons();
 }
 
-/* ─── Render: Sidebar picks ─── */
-function renderSidebar() {
-  const picks = [
-    ['Best coding agent', 'Claude Opus 4.6'],
-    ['Best long context + computer use', 'GPT-5.4'],
-    ['Best cheap traffic', 'Gemini 3.1 Flash-Lite'],
-    ['Best voice / realtime', 'Gemini Flash Live'],
-  ];
+/* Look up a model in modelData by id. Returns undefined if not found —
+ * callers handle that defensively. validate-models.mjs already rejects
+ * unknown modelIds in sidebarPicks/categoryWinners at CI time. */
+function modelById(id) {
+  return modelData.find(m => m.id === id);
+}
+
+/* ─── Render: Sidebar picks (from data/models.json `sidebarPicks`) ─── */
+function renderSidebar(picks) {
   const el = document.getElementById('sidebarPicks');
   el.classList.remove('loading');
-  el.innerHTML = picks.map(([label, name]) =>
-    `<div><strong>${esc(name)}</strong><div class="small muted">${esc(label)}</div></div>`
-  ).join('');
+  const list = (picks || []).map(p => {
+    const m = modelById(p.modelId);
+    if (!m) return '';
+    return `<div><strong>${esc(m.name)}</strong><div class="small muted">${esc(p.label)}</div></div>`;
+  }).filter(Boolean).join('');
+  el.innerHTML = list || '<div class="small muted">No picks configured.</div>';
+}
+
+/* ─── Render: Category winners (from data/models.json `categoryWinners`) ─── */
+function renderCategoryWinners(winners) {
+  const el = document.getElementById('categoryWinners');
+  if (!el) return;
+  const cards = (winners || []).map(w => {
+    const m = modelById(w.modelId);
+    if (!m) return '';
+    const display = w.displayName || m.name;
+    return `<div class="panel card"><div class="small faint">${esc(w.label)}</div><div class="kpi-value">${esc(display)}</div><div class="muted small">${esc(w.tagline)}</div></div>`;
+  }).filter(Boolean).join('');
+  el.innerHTML = cards || '<div class="panel card"><div class="small muted">No category winners configured.</div></div>';
 }
 
 /* ─── Render: Benchmark rows ─── */
@@ -441,6 +458,7 @@ function renderError(message) {
   document.getElementById('benchmarkRows').innerHTML = `<div class="error-box" role="alert">${safe}</div>`;
   document.getElementById('sidebarPicks').classList.remove('loading');
   document.getElementById('sidebarPicks').innerHTML  = `<div class="error-box" role="alert">${safe}</div>`;
+  document.getElementById('categoryWinners').innerHTML = `<div class="panel card"><div class="error-box" role="alert">${safe}</div></div>`;
   document.getElementById('updatedAt').textContent   = 'Unavailable';
   document.getElementById('statusBox').className     = 'error-box';
   document.getElementById('statusBox').textContent   = message;
@@ -458,7 +476,8 @@ async function loadData() {
     data.models.forEach((m, idx) => validateEntry(m, idx));
     modelData = data.models;
     renderMatrix();
-    renderSidebar();
+    renderSidebar(data.sidebarPicks);
+    renderCategoryWinners(data.categoryWinners);
     renderBenchmarks(data.updated || 'Unknown');
     document.getElementById('statusBox').className   = 'muted';
     document.getElementById('statusBox').textContent = `Loaded ${modelData.length} models successfully.`;
