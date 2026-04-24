@@ -42,16 +42,16 @@ Models without a fixed public API price (Llama 4 Maverick, Grok 3, DeepSeek V3/R
 
 ## UI changes
 
-- All dashboard logic lives in `index.html` as a self-contained static file
+- All dashboard logic lives in three sibling files (`index.html`, `assets/styles.css`, `assets/app.js`) — no build step, no framework, no bundler. See the "Code style" section below for the architecture and CSP rules.
 - No build step, no bundler, no dependencies to install
 - Test locally with `npx serve .` or `python -m http.server 8080`
 - Make sure the dashboard still loads correctly with `data/models.json` before opening a PR
 
 ## Code style
 
-- Keep `index.html` as a single file (inline CSS + JS)
+- The dashboard ships as three files: `index.html` (markup only), `assets/styles.css` (all CSS), and `assets/app.js` (all app code, loaded with `defer`). A tiny ~340-byte inline `<script>` in `<head>` sets `data-theme` on `<html>` synchronously to avoid FOUC; it is whitelisted in the CSP via a `'sha256-…'` hash. Do **not** add other inline `<script>` blocks — `script-src` no longer permits `'unsafe-inline'`. If you must add one, recompute the hash and update both the comment in `index.html` and the CSP. Inline `style="…"` attributes on elements are still allowed because `style-src` retains `'unsafe-inline'` (CSS injection risk is materially lower than JS injection)
 - CSS custom properties for all colors and spacing — no hardcoded hex values in component styles
-- No external runtime dependencies beyond the two CDN libraries already loaded (Chart.js, Lucide). Both ship with SRI hashes; if you bump the pinned version you must also update the `integrity=` attribute. There is no Tailwind in this project — all styling is custom CSS in the `<style>` block in `index.html`.
+- No external runtime dependencies beyond the two CDN libraries already loaded (Chart.js, Lucide). Both ship with SRI hashes; if you bump the pinned version you must also update the `integrity=` attribute. There is no Tailwind in this project — all styling is custom CSS in `assets/styles.css`.
 - Extract shared config into named constants (e.g. `NO_ANIMATION`, `RADAR_DEFAULT_IDS`) rather than repeating literals
 - Calculator inputs debounce at 300 ms — keep it that way; do not add immediate `input` listeners that trigger chart redraws
 
