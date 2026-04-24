@@ -32,7 +32,7 @@ jobs:
         run: node scripts/validate-models.mjs
 
       - name: Run unit tests
-        run: node --test 'tests/*.test.mjs'
+        run: node --test tests/calculator.test.mjs tests/validate-models.test.mjs
 
       - name: Verify changelog exists
         run: test -f CHANGELOG.md
