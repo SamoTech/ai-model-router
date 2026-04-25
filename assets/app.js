@@ -527,12 +527,13 @@ async function loadData() {
 }
 
 /* ─── Copy share URL ─── */
+const COPY_BUTTON_DEFAULT_LABEL = 'Copy share URL';
+let copyShareUrlTimer = null;
 async function copyShareUrl(btn) {
   /* The hash is already kept in sync by debouncedCalculate / setProviderFilter
    * etc., so location.href reflects the current scenario without extra work. */
   const url = location.href;
   const span = btn.querySelector('span');
-  const original = span ? span.textContent : 'Copy share URL';
 
   let copied = false;
   try {
@@ -557,8 +558,12 @@ async function copyShareUrl(btn) {
 
   if (span) span.textContent = copied ? 'Copied!' : 'Copy failed';
   btn.classList.toggle('copied', copied);
-  setTimeout(() => {
-    if (span) span.textContent = original;
+  /* Cancel any in-flight reset from a previous click; otherwise rapid double-clicks
+   * snapshot the transient feedback as the "original" and the second timeout
+   * restores the wrong text permanently. */
+  clearTimeout(copyShareUrlTimer);
+  copyShareUrlTimer = setTimeout(() => {
+    if (span) span.textContent = COPY_BUTTON_DEFAULT_LABEL;
     btn.classList.remove('copied');
   }, 1800);
 }
