@@ -153,6 +153,6 @@ Anthropic also published US-only inference at 1.1× pricing — relevant for any
 
 ### Important — what this PR does and does not do
 
-- This PR **only adds this report**. It does not modify `data/models.json`, `RESEARCH.md`, or any UI.
+- This PR **only adds this report** and a one-paragraph cross-reference banner at the top of `RESEARCH.md` that links to it. It does not modify `data/models.json` or any UI.
 - The findings above are **automated diffs** — they may be noisy. A human maintainer must re-fetch each pricing page and confirm before any number moves.
 - The `verifiedAt` field proposed in **Feature A** (per-model `source` URL + verifiedAt date) would let us detect this drift on a continuous basis and surface it in the UI itself rather than via a one-off audit.
