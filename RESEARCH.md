@@ -5,6 +5,8 @@ Pricing sources, benchmark methodology, and model audit log for `data/models.jso
 > **Maintainer:** AI Research Lead  
 > **Update cadence:** On every model launch or pricing change. Weekly check every Monday.
 
+> ⚠️ **Pending refresh — 2026 Q2.** See [`docs/data-refresh-2026-Q2.md`](docs/data-refresh-2026-Q2.md) for an auto-generated diff between this dataset and the provider pricing pages cited below. Several drift findings (e.g. GPT-5.4 output, Gemini 2.5 Flash, Gemini Flash Live) and new flagships (GPT-5.5, Opus 4.7, Gemini 3.1 Pro) need a maintainer to re-verify before any number is touched here. **Do not edit `data/models.json` based on the diff alone.**
+
 ---
 
 ## Pricing sources
