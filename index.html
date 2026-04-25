@@ -152,6 +152,7 @@
           <h2 style="font-size:var(--text-lg);margin-top:0">Category scorecard</h2>
           <p class="muted small">Higher is better. Select up to 6 models to compare on the radar.</p>
           <div class="radar-controls" id="radarControls" role="group" aria-label="Select models for radar chart"></div>
+          <div id="radarLimitHint" class="radar-limit-hint small faint" role="status" aria-live="polite"></div>
           <div class="chart-wrap">
             <canvas id="radarChart" aria-label="Model category scorecard radar chart" role="img"></canvas>
           </div>
@@ -161,8 +162,13 @@
       <!-- Calculator -->
       <section class="grid-2" id="calculator" aria-labelledby="calculator-heading">
         <div class="panel card">
-          <h2 id="calculator-heading" style="font-size:var(--text-lg);margin-top:0">Exact usage calculator</h2>
-          <p class="muted small">Set the token and voice mix you expect each month. Share a scenario by copying the URL after changing the inputs.</p>
+          <div class="card-header-row">
+            <h2 id="calculator-heading" style="font-size:var(--text-lg);margin-top:0">Exact usage calculator</h2>
+            <button id="copyShareUrl" type="button" class="ghost-btn" aria-label="Copy share URL to clipboard">
+              <i data-lucide="link" aria-hidden="true"></i><span>Copy share URL</span>
+            </button>
+          </div>
+          <p class="muted small">Set the token and voice mix you expect each month. The URL updates as you type — share or bookmark it to recall this scenario.</p>
           <div class="inputs">
             <div>
               <label for="inputTokens">Monthly input tokens</label>
