@@ -66,6 +66,19 @@ Only add these if they apply:
 "perMinute":             0.018   // voice cost per minute
 ```
 
+### Provenance fields (recommended)
+
+These two fields make the dataset auditable — the dashboard renders a small
+"verified YYYY-MM-DD ↗" link next to the model name in the value matrix that
+links back to the official pricing page. Both must appear together (or
+neither — they are optional today for back-compat, but new entries should
+include them).
+
+```jsonc
+"source":     "https://openai.com/api/pricing/",  // canonical pricing page (https only)
+"verifiedAt": "2026-04-22"                        // YYYY-MM-DD; must be ≤ top-level "updated"
+```
+
 ---
 
 ## Step 3 — Pick a unique color
