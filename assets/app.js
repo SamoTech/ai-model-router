@@ -102,6 +102,8 @@ function verdictBadge(v, l) {
 const REQUIRED_FIELDS = ['id','name','provider','contextWindow','bestAt','verdict','verdictLabel','take','color','radar'];
 const REQUIRED_RADAR  = ['coding','longContext','voice','computerUse','costEfficiency'];
 const COLOR_RE = /^#[0-9a-fA-F]{6}$/;
+const SOURCE_URL_RE = /^https?:\/\/[^\s<>"']+$/i;
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 function validateEntry(m, idx) {
   const missing = REQUIRED_FIELDS.filter(f => m[f] === undefined || m[f] === null || m[f] === '');
   if (missing.length) throw new Error(`Model at index ${idx} ("${m.id || 'unknown'}") missing fields: ${missing.join(', ')}`);
@@ -113,6 +115,19 @@ function validateEntry(m, idx) {
   for (const k of REQUIRED_RADAR) {
     const val = m.radar[k];
     if (!Number.isInteger(val) || val < 0 || val > 10) throw new Error(`Model "${m.id}" radar.${k} out of range 0-10: ${val}`);
+  }
+  /* Provenance fields are optional but if either appears, both must — and the
+   * server validator (scripts/validate-models.mjs) is authoritative. We only
+   * enforce the URL-shape check here so a malformed source can't slip past
+   * the client renderer (the matrix interpolates m.source into an href). */
+  const hasSrc = m.source != null && m.source !== '';
+  const hasVer = m.verifiedAt != null && m.verifiedAt !== '';
+  if (hasSrc !== hasVer) throw new Error(`Model "${m.id}" must specify both source and verifiedAt together`);
+  if (hasSrc && (typeof m.source !== 'string' || !SOURCE_URL_RE.test(m.source))) {
+    throw new Error(`Model "${m.id}" source must be an http(s) URL: ${m.source}`);
+  }
+  if (hasVer && (typeof m.verifiedAt !== 'string' || !DATE_RE.test(m.verifiedAt))) {
+    throw new Error(`Model "${m.id}" verifiedAt must be YYYY-MM-DD: ${m.verifiedAt}`);
   }
 }
 
@@ -190,7 +205,7 @@ function renderFilteredMatrix() {
       : '';
     return `
     <tr>
-      <td><strong>${esc(m.name)}</strong></td>
+      <td><strong>${esc(m.name)}</strong>${sourceLink(m)}</td>
       <td>${esc(m.provider)}</td>
       <td>${inputCell}${longCtxNote}</td>
       <td>${outputCell}${audioNote}</td>
@@ -200,6 +215,19 @@ function renderFilteredMatrix() {
       <td>${esc(m.take)}</td>
     </tr>`;
   }).join('');
+}
+
+/* ─── Provenance link for the matrix's Model column ───
+ * Renders a small "↗ verified YYYY-MM-DD" link next to the model name when both
+ * `source` and `verifiedAt` are present in JSON. The validator already enforces
+ * that they appear together and that source matches /^https?:…/, so the
+ * URL is safe to interpolate after esc(). The link opens in a new tab with
+ * rel="noopener noreferrer" so the source page can't reach back into ours. */
+function sourceLink(m) {
+  if (!m.source || !m.verifiedAt) return '';
+  const url = esc(m.source);
+  const date = esc(m.verifiedAt);
+  return ` <a class="source-link" href="${url}" target="_blank" rel="noopener noreferrer" aria-label="View ${esc(m.provider)} pricing source (verified ${date})" title="Verified ${date} — ${url}">verified ${date}<span aria-hidden="true"> ↗</span></a>`;
 }
 
 function renderMatrix() { renderFilteredMatrix(); }

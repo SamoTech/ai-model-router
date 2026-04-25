@@ -16,7 +16,9 @@
       "verdictLabel": "Often overpriced",
       "take": "Do not use as your default bulk model. Use it where context or UI automation changes business outcomes.",
       "benchmarks": { "OSWorld": "75%", "SWEBenchPro": "57.7%" },
-      "radar": { "coding": 8, "longContext": 10, "voice": 6, "computerUse": 10, "costEfficiency": 3 }
+      "radar": { "coding": 8, "longContext": 10, "voice": 6, "computerUse": 10, "costEfficiency": 3 },
+      "source": "https://openai.com/api/pricing/",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "gpt-4-1",
@@ -33,7 +35,9 @@
       "verdictLabel": "Solid workhorse",
       "take": "Best all-round OpenAI option below GPT-5.4. Strong at instruction following and long diffs without the flagship price tag.",
       "benchmarks": { "SWEBenchVerified": "54.6%" },
-      "radar": { "coding": 8, "longContext": 8, "voice": 4, "computerUse": 7, "costEfficiency": 5 }
+      "radar": { "coding": 8, "longContext": 8, "voice": 4, "computerUse": 7, "costEfficiency": 5 },
+      "source": "https://openai.com/api/pricing/",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "gpt-4-1-mini",
@@ -48,7 +52,9 @@
       "verdictLabel": "Best OpenAI value",
       "take": "The default OpenAI model for production pipelines that don't need full GPT-5.4 power. Substantially cheaper, very capable.",
       "benchmarks": { "SWEBenchVerified": "46.0%" },
-      "radar": { "coding": 6, "longContext": 7, "voice": 3, "computerUse": 5, "costEfficiency": 8 }
+      "radar": { "coding": 6, "longContext": 7, "voice": 3, "computerUse": 5, "costEfficiency": 8 },
+      "source": "https://openai.com/api/pricing/",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "gpt-4-1-nano",
@@ -63,7 +69,9 @@
       "verdictLabel": "Cheapest OpenAI",
       "take": "OpenAI's answer to Flash-Lite. Fits where you need OpenAI's ecosystem but want near-zero token cost.",
       "benchmarks": {},
-      "radar": { "coding": 4, "longContext": 5, "voice": 2, "computerUse": 3, "costEfficiency": 9 }
+      "radar": { "coding": 4, "longContext": 5, "voice": 2, "computerUse": 3, "costEfficiency": 9 },
+      "source": "https://openai.com/api/pricing/",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "o3",
@@ -78,7 +86,9 @@
       "verdictLabel": "Specialist only",
       "take": "Only reaches for this when the task genuinely requires deep multi-step reasoning — math olympiad-class problems, formal verification, research synthesis. Very expensive.",
       "benchmarks": { "AIME 2025": "88%", "SWEBenchVerified": "71.7%" },
-      "radar": { "coding": 9, "longContext": 6, "voice": 1, "computerUse": 6, "costEfficiency": 1 }
+      "radar": { "coding": 9, "longContext": 6, "voice": 1, "computerUse": 6, "costEfficiency": 1 },
+      "source": "https://openai.com/api/pricing/",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "o4-mini",
@@ -93,7 +103,9 @@
       "verdictLabel": "Reasoning at scale",
       "take": "Best reasoning-to-cost ratio in the OpenAI lineup. Replaces o3 for most production reasoning tasks where full o3 cost is unjustifiable.",
       "benchmarks": { "AIME 2025": "92.7%", "SWEBenchVerified": "68.1%" },
-      "radar": { "coding": 8, "longContext": 6, "voice": 1, "computerUse": 5, "costEfficiency": 6 }
+      "radar": { "coding": 8, "longContext": 6, "voice": 1, "computerUse": 5, "costEfficiency": 6 },
+      "source": "https://openai.com/api/pricing/",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "claude-opus-4-6",
@@ -108,7 +120,9 @@
       "verdictLabel": "Worth it selectively",
       "take": "Expensive, but failures cost more than tokens on difficult engineering tasks.",
       "benchmarks": { "SWEBenchVerified": "80.84%", "TerminalBench2": "65.4%", "OSWorld": "72.7%" },
-      "radar": { "coding": 10, "longContext": 8, "voice": 3, "computerUse": 8, "costEfficiency": 2 }
+      "radar": { "coding": 10, "longContext": 8, "voice": 3, "computerUse": 8, "costEfficiency": 2 },
+      "source": "https://www.anthropic.com/pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "claude-sonnet-4-5",
@@ -123,7 +137,9 @@
       "verdictLabel": "Strong mid-tier",
       "take": "The pragmatic Anthropic default. Strong enough for most coding and writing tasks without Opus 4.6 pricing.",
       "benchmarks": { "SWEBenchVerified": "72.7%" },
-      "radar": { "coding": 8, "longContext": 7, "voice": 3, "computerUse": 6, "costEfficiency": 4 }
+      "radar": { "coding": 8, "longContext": 7, "voice": 3, "computerUse": 6, "costEfficiency": 4 },
+      "source": "https://www.anthropic.com/pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "claude-haiku-4",
@@ -138,7 +154,9 @@
       "verdictLabel": "Best Anthropic value",
       "take": "The cheapest entry into Anthropic quality. Best pick when you need Claude's safety profile and instruction-following at scale.",
       "benchmarks": {},
-      "radar": { "coding": 6, "longContext": 6, "voice": 2, "computerUse": 4, "costEfficiency": 8 }
+      "radar": { "coding": 6, "longContext": 6, "voice": 2, "computerUse": 4, "costEfficiency": 8 },
+      "source": "https://www.anthropic.com/pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "gemini-2-5-pro",
@@ -155,7 +173,9 @@
       "verdictLabel": "Top Google pick",
       "take": "Google's strongest model for complex tasks. Competitive with Claude Sonnet 4.5 on coding at a lower price, with a larger context window.",
       "benchmarks": { "SWEBenchVerified": "63.8%", "MMLU": "89.3%" },
-      "radar": { "coding": 9, "longContext": 9, "voice": 5, "computerUse": 7, "costEfficiency": 6 }
+      "radar": { "coding": 9, "longContext": 9, "voice": 5, "computerUse": 7, "costEfficiency": 6 },
+      "source": "https://ai.google.dev/pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "gemini-2-5-flash",
@@ -170,7 +190,9 @@
       "verdictLabel": "Speed + value",
       "take": "Excellent price-performance. Beats Flash-Lite on quality while remaining far cheaper than Pro. Strong default for medium-complexity workloads.",
       "benchmarks": { "MMLU": "85.1%" },
-      "radar": { "coding": 7, "longContext": 8, "voice": 5, "computerUse": 5, "costEfficiency": 9 }
+      "radar": { "coding": 7, "longContext": 8, "voice": 5, "computerUse": 5, "costEfficiency": 9 },
+      "source": "https://ai.google.dev/pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "gemini-3-1-flash-lite",
@@ -185,7 +207,9 @@
       "verdictLabel": "Secret best deal",
       "take": "The sensible default for high-volume production unless quality gaps become measurable.",
       "benchmarks": { "TTFT": "2.5x faster vs Flash 2.5" },
-      "radar": { "coding": 5, "longContext": 6, "voice": 4, "computerUse": 4, "costEfficiency": 10 }
+      "radar": { "coding": 5, "longContext": 6, "voice": 4, "computerUse": 4, "costEfficiency": 10 },
+      "source": "https://ai.google.dev/pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "gemini-flash-live",
@@ -203,7 +227,9 @@
       "verdictLabel": "Best voice buy",
       "take": "Not a general text default, but very strong when the interface is live audio-first.",
       "benchmarks": {},
-      "radar": { "coding": 4, "longContext": 4, "voice": 10, "computerUse": 4, "costEfficiency": 8 }
+      "radar": { "coding": 4, "longContext": 4, "voice": 10, "computerUse": 4, "costEfficiency": 8 },
+      "source": "https://ai.google.dev/pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "mistral-medium-3",
@@ -218,7 +244,9 @@
       "verdictLabel": "Strong value",
       "take": "A pragmatic mid-tier option when you want lower cost than frontier labs without dropping too far in quality.",
       "benchmarks": { "Positioning": "Frontier-adjacent mid-tier" },
-      "radar": { "coding": 6, "longContext": 6, "voice": 3, "computerUse": 4, "costEfficiency": 8 }
+      "radar": { "coding": 6, "longContext": 6, "voice": 3, "computerUse": 4, "costEfficiency": 8 },
+      "source": "https://mistral.ai/technology/#pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "mistral-small-3-1",
@@ -233,7 +261,9 @@
       "verdictLabel": "EU-friendly cheap",
       "take": "Best pick when data residency, GDPR compliance, or on-device deployment matters. Surprisingly capable for the price.",
       "benchmarks": {},
-      "radar": { "coding": 5, "longContext": 5, "voice": 2, "computerUse": 3, "costEfficiency": 9 }
+      "radar": { "coding": 5, "longContext": 5, "voice": 2, "computerUse": 3, "costEfficiency": 9 },
+      "source": "https://mistral.ai/technology/#pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "command-a",
@@ -248,7 +278,9 @@
       "verdictLabel": "Enterprise RAG pick",
       "take": "Cohere's flagship replaces Command R+ for enterprise retrieval. Stronger tool use and a larger context window for document-heavy workflows.",
       "benchmarks": { "Positioning": "Enterprise RAG & agentic" },
-      "radar": { "coding": 6, "longContext": 8, "voice": 2, "computerUse": 4, "costEfficiency": 5 }
+      "radar": { "coding": 6, "longContext": 8, "voice": 2, "computerUse": 4, "costEfficiency": 5 },
+      "source": "https://cohere.com/pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "command-r-plus",
@@ -263,7 +295,9 @@
       "verdictLabel": "Niche enterprise fit",
       "take": "Superseded by Command A for most use cases. Still relevant in legacy stacks already integrated with Cohere.",
       "benchmarks": { "Strength": "RAG-oriented enterprise workflows" },
-      "radar": { "coding": 5, "longContext": 7, "voice": 2, "computerUse": 3, "costEfficiency": 5 }
+      "radar": { "coding": 5, "longContext": 7, "voice": 2, "computerUse": 3, "costEfficiency": 5 },
+      "source": "https://cohere.com/pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "llama-4-maverick",
@@ -278,7 +312,9 @@
       "verdictLabel": "Flexible open pick",
       "take": "Useful when open-weight control matters more than having the absolute best hosted benchmark leader.",
       "benchmarks": { "Strength": "Open ecosystem reach" },
-      "radar": { "coding": 7, "longContext": 7, "voice": 2, "computerUse": 4, "costEfficiency": 8 }
+      "radar": { "coding": 7, "longContext": 7, "voice": 2, "computerUse": 4, "costEfficiency": 8 },
+      "source": "https://www.llama.com/llama-api/",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "grok-3",
@@ -293,7 +329,9 @@
       "verdictLabel": "Check pricing first",
       "take": "Competitive on benchmarks but pricing is volatile. Verify rates before routing production traffic.",
       "benchmarks": { "AIME 2025": "93.3%", "Positioning": "Frontier reasoning class" },
-      "radar": { "coding": 7, "longContext": 7, "voice": 4, "computerUse": 6, "costEfficiency": 5 }
+      "radar": { "coding": 7, "longContext": 7, "voice": 4, "computerUse": 6, "costEfficiency": 5 },
+      "source": "https://x.ai/api",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "deepseek-reasoning",
@@ -308,7 +346,9 @@
       "verdictLabel": "Underrated",
       "take": "Wins when privacy, caching, or self-host economics matter more than managed API polish.",
       "benchmarks": {},
-      "radar": { "coding": 7, "longContext": 7, "voice": 1, "computerUse": 5, "costEfficiency": 9 }
+      "radar": { "coding": 7, "longContext": 7, "voice": 1, "computerUse": 5, "costEfficiency": 9 },
+      "source": "https://api-docs.deepseek.com/quick_start/pricing",
+      "verifiedAt": "2026-04-22"
     },
     {
       "id": "qwen-coding",
@@ -323,7 +363,9 @@
       "verdictLabel": "Quietly strong",
       "take": "Best open option for teams that want control, fine-tuning, and decent coding behavior.",
       "benchmarks": {},
-      "radar": { "coding": 9, "longContext": 6, "voice": 1, "computerUse": 4, "costEfficiency": 9 }
+      "radar": { "coding": 9, "longContext": 6, "voice": 1, "computerUse": 4, "costEfficiency": 9 },
+      "source": "https://qwenlm.github.io/blog/",
+      "verifiedAt": "2026-04-22"
     }
   ]
 }

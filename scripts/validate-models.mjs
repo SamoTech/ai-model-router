@@ -15,6 +15,8 @@
  *   - XSS-character scan on every user-facing string field — the dashboard
  *     renders these via innerHTML, so any of < > & " ' must come pre-escaped
  *     and is rejected at the data layer to keep authoring obvious.
+ *   - optional `source` (https URL) + `verifiedAt` (YYYY-MM-DD) provenance
+ *     fields — must appear together; `verifiedAt` must be ≤ top-level `updated`.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -129,6 +131,35 @@ if (Array.isArray(data.models)) {
     /* longContextInputRate without threshold is meaningless */
     if (m.longContextInputRate != null && m.longContextThreshold == null) {
       fail(`${tag} has longContextInputRate but no longContextThreshold`);
+    }
+
+    /* Provenance: optional `source` (https URL) + optional `verifiedAt` (YYYY-MM-DD).
+     * Optional today so existing rows stay valid; the dashboard surfaces them when present.
+     * If either is supplied, both must be — a URL with no verification date is misleading,
+     * and a date with no URL has nothing to point at. */
+    const hasSource = 'source' in m && m.source !== null && m.source !== '';
+    const hasVerifiedAt = 'verifiedAt' in m && m.verifiedAt !== null && m.verifiedAt !== '';
+    if (hasSource !== hasVerifiedAt) {
+      fail(`${tag} must specify both "source" and "verifiedAt" together (or neither); got source=${JSON.stringify(m.source)}, verifiedAt=${JSON.stringify(m.verifiedAt)}`);
+    }
+    if (hasSource) {
+      if (typeof m.source !== 'string') {
+        fail(`${tag} source must be a string (got ${typeof m.source})`);
+      } else if (!/^https?:\/\/[^\s<>"']+$/i.test(m.source)) {
+        fail(`${tag} source must be an http(s) URL with no whitespace or HTML-unsafe characters (got ${JSON.stringify(m.source)})`);
+      } else if (HTML_UNSAFE_RE.test(m.source)) {
+        fail(`${tag} source contains HTML-unsafe characters: ${JSON.stringify(m.source)}`);
+      }
+    }
+    if (hasVerifiedAt) {
+      if (typeof m.verifiedAt !== 'string' || !DATE_RE.test(m.verifiedAt)) {
+        fail(`${tag} verifiedAt must be a YYYY-MM-DD string (got ${JSON.stringify(m.verifiedAt)})`);
+      } else if (m.verifiedAt > data.updated) {
+        /* The per-model verification date should never be later than the file-level
+         * "updated" timestamp — otherwise the file is claiming to know about
+         * verifications that happened after it was last touched. */
+        fail(`${tag} verifiedAt (${m.verifiedAt}) is after top-level updated (${data.updated})`);
+      }
     }
   });
 }
