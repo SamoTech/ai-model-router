@@ -121,12 +121,9 @@
         </div>
       </section>
 
-      <!-- KPIs -->
-      <section class="kpis" aria-label="Category winners">
-        <div class="panel card"><div class="small faint">Coding winner</div><div class="kpi-value">Claude Opus 4.6</div><div class="muted small">Best fit for repo-scale agents</div></div>
-        <div class="panel card"><div class="small faint">Context winner</div><div class="kpi-value">GPT-5.4</div><div class="muted small">1.05M-token class</div></div>
-        <div class="panel card"><div class="small faint">Voice winner</div><div class="kpi-value">Flash Live</div><div class="muted small">Realtime multimodal pricing</div></div>
-        <div class="panel card"><div class="small faint">Cheap traffic</div><div class="kpi-value">Flash-Lite</div><div class="muted small">Best API economics</div></div>
+      <!-- KPIs (rendered from data/models.json `categoryWinners`) -->
+      <section class="kpis" id="categoryWinners" aria-label="Category winners">
+        <div class="panel card loading"><div class="small faint">Loading category winners…</div></div>
       </section>
 
       <!-- Router + Radar -->

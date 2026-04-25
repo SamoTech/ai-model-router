@@ -17,6 +17,9 @@
  *     and is rejected at the data layer to keep authoring obvious.
  *   - optional `source` (https URL) + `verifiedAt` (YYYY-MM-DD) provenance
  *     fields — must appear together; `verifiedAt` must be ≤ top-level `updated`.
+ *   - optional `sidebarPicks` and `categoryWinners` arrays: structure +
+ *     XSS scan on prose fields, and every `modelId` must reference an
+ *     existing model id.
  */
 import fs from 'node:fs';
 import path from 'node:path';
@@ -163,6 +166,43 @@ if (Array.isArray(data.models)) {
     }
   });
 }
+
+/* ─── Optional homepage highlight arrays ────────────────────────────────── */
+
+const VALID_CATEGORIES = new Set(['coding', 'context', 'voice', 'cheap']);
+
+function validateRefArray(arr, fieldName, perItemFn) {
+  if (arr === undefined) return;
+  if (!Array.isArray(arr)) { fail(`top-level "${fieldName}" must be an array`); return; }
+  arr.forEach((entry, i) => {
+    const tag = `${fieldName}[${i}]`;
+    if (!entry || typeof entry !== 'object') { fail(`${tag} must be an object`); return; }
+    if (typeof entry.modelId !== 'string')   { fail(`${tag} missing string field: modelId`); return; }
+    if (!ids.has(entry.modelId))             { fail(`${tag} references unknown modelId: ${entry.modelId}`); }
+    perItemFn(entry, tag);
+  });
+}
+
+validateRefArray(data.sidebarPicks, 'sidebarPicks', (entry, tag) => {
+  if (typeof entry.label !== 'string') { fail(`${tag} missing string field: label`); return; }
+  if (HTML_UNSAFE_RE.test(entry.label)) fail(`${tag} field "label" contains HTML-unsafe characters: ${JSON.stringify(entry.label)}`);
+});
+
+const seenCategories = new Set();
+validateRefArray(data.categoryWinners, 'categoryWinners', (entry, tag) => {
+  if (typeof entry.category !== 'string')          { fail(`${tag} missing string field: category`); }
+  else if (!VALID_CATEGORIES.has(entry.category))  { fail(`${tag} invalid category: ${entry.category} — allowed: ${[...VALID_CATEGORIES].join(', ')}`); }
+  else if (seenCategories.has(entry.category))     { fail(`${tag} duplicate category: ${entry.category}`); }
+  else                                             { seenCategories.add(entry.category); }
+  for (const f of ['label', 'tagline']) {
+    if (typeof entry[f] !== 'string') { fail(`${tag} missing string field: ${f}`); }
+    else if (HTML_UNSAFE_RE.test(entry[f])) fail(`${tag} field "${f}" contains HTML-unsafe characters: ${JSON.stringify(entry[f])}`);
+  }
+  if (entry.displayName !== undefined) {
+    if (typeof entry.displayName !== 'string') { fail(`${tag} field "displayName" must be a string when present`); }
+    else if (HTML_UNSAFE_RE.test(entry.displayName)) fail(`${tag} field "displayName" contains HTML-unsafe characters: ${JSON.stringify(entry.displayName)}`);
+  }
+});
 
 if (errors.length) {
   for (const e of errors) console.error(`  - ${e}`);

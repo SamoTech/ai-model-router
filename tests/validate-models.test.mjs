@@ -123,6 +123,95 @@ test('rejects negative pricing', () => {
   assert.match(r.stderr, /inputRate must be null or a non-negative number/);
 });
 
+/* ─── Optional homepage highlights (sidebarPicks, categoryWinners) ─── */
+
+const validWinners = [
+  { category: 'coding',  label: 'Coding winner',  modelId: 'test-1', tagline: 'Best at code' },
+  { category: 'context', label: 'Context winner', modelId: 'test-1', tagline: 'Big window' },
+  { category: 'voice',   label: 'Voice winner',   modelId: 'test-1', tagline: 'Realtime audio', displayName: 'Short Name' },
+  { category: 'cheap',   label: 'Cheap traffic',  modelId: 'test-1', tagline: 'Cheapest' }
+];
+
+test('accepts valid sidebarPicks + categoryWinners', () => {
+  const r = runValidator({
+    updated: '2026-04-22',
+    sidebarPicks:    [{ modelId: 'test-1', label: 'Best test' }],
+    categoryWinners: validWinners,
+    models: [validModel]
+  });
+  assert.equal(r.status, 0, r.stderr);
+});
+
+test('rejects sidebarPicks referencing unknown modelId', () => {
+  const r = runValidator({
+    updated: '2026-04-22',
+    sidebarPicks: [{ modelId: 'does-not-exist', label: 'oops' }],
+    models: [validModel]
+  });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /sidebarPicks\[0\] references unknown modelId: does-not-exist/);
+});
+
+test('rejects categoryWinners with invalid category', () => {
+  const bad = [{ ...validWinners[0], category: 'speed' }];
+  const r = runValidator({
+    updated: '2026-04-22',
+    categoryWinners: bad,
+    models: [validModel]
+  });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /categoryWinners\[0\] invalid category: speed/);
+});
+
+test('rejects duplicate categoryWinners entries for the same category', () => {
+  const dup = [validWinners[0], { ...validWinners[0] }];
+  const r = runValidator({
+    updated: '2026-04-22',
+    categoryWinners: dup,
+    models: [validModel]
+  });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /duplicate category: coding/);
+});
+
+test('rejects HTML-unsafe characters in sidebarPicks label', () => {
+  const r = runValidator({
+    updated: '2026-04-22',
+    sidebarPicks: [{ modelId: 'test-1', label: '<img src=x>' }],
+    models: [validModel]
+  });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /sidebarPicks\[0\] field "label" contains HTML-unsafe characters/);
+});
+
+test('rejects HTML-unsafe characters in categoryWinners tagline', () => {
+  const r = runValidator({
+    updated: '2026-04-22',
+    categoryWinners: [{ ...validWinners[0], tagline: '<script>alert(1)</script>' }],
+    models: [validModel]
+  });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /categoryWinners\[0\] field "tagline" contains HTML-unsafe characters/);
+});
+
+test('rejects missing required fields on sidebarPicks/categoryWinners entries', () => {
+  const r1 = runValidator({
+    updated: '2026-04-22',
+    sidebarPicks: [{ modelId: 'test-1' }],
+    models: [validModel]
+  });
+  assert.equal(r1.status, 1);
+  assert.match(r1.stderr, /sidebarPicks\[0\] missing string field: label/);
+
+  const r2 = runValidator({
+    updated: '2026-04-22',
+    categoryWinners: [{ category: 'coding', modelId: 'test-1', tagline: 'x' }],
+    models: [validModel]
+  });
+  assert.equal(r2.status, 1);
+  assert.match(r2.stderr, /categoryWinners\[0\] missing string field: label/);
+});
+
 test('rejects longContextInputRate without threshold', () => {
   const m = { ...validModel, longContextInputRate: 5 };
   const r = runValidator({ updated: '2026-04-22', models: [m] });

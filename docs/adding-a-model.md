@@ -105,6 +105,46 @@ Scores are routing heuristics, not definitive rankings. Use your judgement relat
 
 ---
 
+## Step 5a (optional) — Promote the model to the homepage
+
+Two top-level arrays drive the homepage highlights. Both are optional; if you skip them, the section just renders an empty placeholder.
+
+### `sidebarPicks` — left rail "Default picks" list
+
+```jsonc
+"sidebarPicks": [
+  { "modelId": "claude-opus-4-6",       "label": "Best coding agent" },
+  { "modelId": "gpt-5-4",               "label": "Best long context + computer use" },
+  { "modelId": "gemini-3-1-flash-lite", "label": "Best cheap traffic" },
+  { "modelId": "gemini-flash-live",     "label": "Best voice / realtime" }
+]
+```
+
+Every `modelId` must reference an existing entry in the `models` array. The model's `name` field is used as the heading; the `label` is shown beneath it.
+
+### `categoryWinners` — the four KPI cards under the hero
+
+```jsonc
+"categoryWinners": [
+  { "category": "coding",  "label": "Coding winner",  "modelId": "claude-opus-4-6",       "tagline": "Best fit for repo-scale agents" },
+  { "category": "context", "label": "Context winner", "modelId": "gpt-5-4",               "tagline": "1.05M-token class" },
+  { "category": "voice",   "label": "Voice winner",   "modelId": "gemini-flash-live",     "tagline": "Realtime multimodal pricing", "displayName": "Flash Live" },
+  { "category": "cheap",   "label": "Cheap traffic",  "modelId": "gemini-3-1-flash-lite", "tagline": "Best API economics",          "displayName": "Flash-Lite" }
+]
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `category` | yes | One of `coding`, `context`, `voice`, `cheap`. Each value can appear at most once. |
+| `label` | yes | Card heading (e.g. `Coding winner`). |
+| `modelId` | yes | Must reference a `models[].id`. |
+| `tagline` | yes | One-liner under the model name. |
+| `displayName` | no | Optional override for the model name shown in the card. Useful when the full model name is too long for the KPI row. |
+
+`label`, `tagline`, and `displayName` are XSS-scanned the same way as `take` and `verdictLabel`.
+
+---
+
 ## Step 5 — Update the `updated` date
 
 Change the top-level `"updated"` field to today's date in `YYYY-MM-DD` format:
@@ -148,5 +188,7 @@ Commit to `main`. CI will validate the schema and redeploy Pages automatically.
 | Radar score outside 0–10 | `radar.coding invalid for your-model-id` |
 | Missing required field | `model[N] missing fieldName` |
 | Invalid color hex | `invalid color for your-model-id` |
+| `sidebarPicks`/`categoryWinners` references unknown `modelId` | `references unknown modelId: …` |
+| Two `categoryWinners` entries share the same `category` | `duplicate category: coding` |
 
 All errors block the deploy. Fix the JSON and push again.
