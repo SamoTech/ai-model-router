@@ -129,3 +129,59 @@ test('rejects longContextInputRate without threshold', () => {
   assert.equal(r.status, 1);
   assert.match(r.stderr, /longContextInputRate but no longContextThreshold/);
 });
+
+/* ─── source + verifiedAt provenance fields ─── */
+
+test('accepts model with source + verifiedAt', () => {
+  const m = { ...validModel, source: 'https://openai.com/api/pricing/', verifiedAt: '2026-04-22' };
+  const r = runValidator({ updated: '2026-04-22', models: [m] });
+  assert.equal(r.status, 0, r.stderr);
+});
+
+test('accepts model with neither source nor verifiedAt (both optional)', () => {
+  const r = runValidator({ updated: '2026-04-22', models: [validModel] });
+  assert.equal(r.status, 0, r.stderr);
+});
+
+test('rejects source without verifiedAt', () => {
+  const m = { ...validModel, source: 'https://openai.com/api/pricing/' };
+  const r = runValidator({ updated: '2026-04-22', models: [m] });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /must specify both "source" and "verifiedAt" together/);
+});
+
+test('rejects verifiedAt without source', () => {
+  const m = { ...validModel, verifiedAt: '2026-04-22' };
+  const r = runValidator({ updated: '2026-04-22', models: [m] });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /must specify both "source" and "verifiedAt" together/);
+});
+
+test('rejects non-https source URL scheme', () => {
+  const m = { ...validModel, source: 'ftp://openai.com/pricing', verifiedAt: '2026-04-22' };
+  const r = runValidator({ updated: '2026-04-22', models: [m] });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /source must be an http\(s\) URL/);
+});
+
+test('rejects javascript: in source URL', () => {
+  const m = { ...validModel, source: 'javascript:alert(1)', verifiedAt: '2026-04-22' };
+  const r = runValidator({ updated: '2026-04-22', models: [m] });
+  assert.equal(r.status, 1);
+  /* Either the http(s)-only check fires first, or the HTML_UNSAFE_RE check does — both are correct rejections. */
+  assert.match(r.stderr, /source/);
+});
+
+test('rejects malformed verifiedAt', () => {
+  const m = { ...validModel, source: 'https://openai.com/api/pricing/', verifiedAt: 'April 22 2026' };
+  const r = runValidator({ updated: '2026-04-22', models: [m] });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /verifiedAt must be a YYYY-MM-DD/);
+});
+
+test('rejects verifiedAt later than top-level updated', () => {
+  const m = { ...validModel, source: 'https://openai.com/api/pricing/', verifiedAt: '2026-05-01' };
+  const r = runValidator({ updated: '2026-04-22', models: [m] });
+  assert.equal(r.status, 1);
+  assert.match(r.stderr, /verifiedAt .* is after top-level updated/);
+});

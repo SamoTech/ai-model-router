@@ -134,6 +134,23 @@ input:focus, select:focus {
 .results { display: grid; gap: 12px; margin-top: var(--space-4); }
 .result-row { display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border-radius: 16px; background: var(--color-surface-offset); }
 .small { font-size: var(--text-sm); }
+
+/* Provenance link in matrix model column. Subtle — should not compete with the
+ * model name. Uses the same faint text colour and a small underline on hover. */
+.source-link {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: var(--text-sm);
+  font-weight: 400;
+  color: var(--color-text-faint);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.source-link:hover,
+.source-link:focus-visible {
+  color: var(--color-text);
+  text-decoration: underline;
+}
 .footer-note { padding: var(--space-5); font-size: var(--text-sm); }
 .theme-btn {
   border: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-text);
