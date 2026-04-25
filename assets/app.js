@@ -159,6 +159,9 @@ function buildProviderFilters() {
       ? 'Open' : m.provider;
     if (!seen.has(label)) { seen.add(label); providers.push(label); }
   });
+  /* Sort alphabetically (case-insensitive, locale-aware) so chip order is
+   * deterministic and adding a new model doesn't shuffle existing chips. */
+  providers.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
 
   const container = document.getElementById('providerFilters');
   container.innerHTML = providers.map(p =>
@@ -325,10 +328,36 @@ function buildRadarControls() {
   );
 }
 
+/* Transient feedback for the two no-op radar toggles (last-one, max-reached).
+ * Self-clears so it doesn't accumulate or block subsequent interactions. */
+let radarHintTimer = null;
+function showRadarHint(message, kind = 'warn') {
+  const el = document.getElementById('radarLimitHint');
+  if (!el) return;
+  el.textContent = message;
+  el.classList.toggle('warn', kind === 'warn');
+  clearTimeout(radarHintTimer);
+  radarHintTimer = setTimeout(() => {
+    el.textContent = '';
+    el.classList.remove('warn');
+  }, 3000);
+}
+
 function toggleRadarModel(id) {
   const idx = radarSelectedIds.indexOf(id);
-  if (idx > -1) { if (radarSelectedIds.length === 1) return; radarSelectedIds.splice(idx, 1); }
-  else { if (radarSelectedIds.length >= MAX_RADAR) return; radarSelectedIds.push(id); }
+  if (idx > -1) {
+    if (radarSelectedIds.length === 1) {
+      showRadarHint('At least one model must be selected.');
+      return;
+    }
+    radarSelectedIds.splice(idx, 1);
+  } else {
+    if (radarSelectedIds.length >= MAX_RADAR) {
+      showRadarHint(`Maximum ${MAX_RADAR} models on the radar — remove one to add another.`);
+      return;
+    }
+    radarSelectedIds.push(id);
+  }
   document.querySelectorAll('.radar-chip').forEach(btn => {
     const active = radarSelectedIds.includes(btn.dataset.modelId);
     btn.classList.toggle('active', active);
@@ -497,6 +526,43 @@ async function loadData() {
   }
 }
 
+/* ─── Copy share URL ─── */
+async function copyShareUrl(btn) {
+  /* The hash is already kept in sync by debouncedCalculate / setProviderFilter
+   * etc., so location.href reflects the current scenario without extra work. */
+  const url = location.href;
+  const span = btn.querySelector('span');
+  const original = span ? span.textContent : 'Copy share URL';
+
+  let copied = false;
+  try {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(url);
+      copied = true;
+    }
+  } catch (_) { /* fall through to legacy fallback */ }
+
+  if (!copied) {
+    /* Legacy fallback for non-secure contexts (e.g. plain http://localhost). */
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    ta.setAttribute('readonly', '');
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { copied = document.execCommand('copy'); } catch (_) { copied = false; }
+    document.body.removeChild(ta);
+  }
+
+  if (span) span.textContent = copied ? 'Copied!' : 'Copy failed';
+  btn.classList.toggle('copied', copied);
+  setTimeout(() => {
+    if (span) span.textContent = original;
+    btn.classList.remove('copied');
+  }, 1800);
+}
+
 /* ─── Init ─── */
 function init() {
   restoreFromHash();
@@ -511,6 +577,8 @@ function init() {
   document.querySelectorAll('[data-verdict]').forEach(btn =>
     btn.addEventListener('click', () => setVerdictFilter(btn.dataset.verdict))
   );
+  const copyBtn = document.getElementById('copyShareUrl');
+  if (copyBtn) copyBtn.addEventListener('click', () => copyShareUrl(copyBtn));
   window.addEventListener('hashchange', () => {
     const p = restoreFromHash();
     applyFilterFromHash(p, { applyOnly: true });
