@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- `RESEARCH.md` — pricing sources, benchmark methodology notes, and full 21-model audit
+- `docs/ci.md` — full CI pipeline documentation covering all three jobs (`validate`, `deploy`, `health-check`)
+- `docs/adding-a-model.md` — step-by-step contributor guide for adding new entries to `data/models.json`
+- `.htmlhintrc` — HTML lint configuration for CI
+- `scripts/validate-models.mjs` — consolidated JSON validator used by both workflows
+- `tests/calculator.test.mjs` — unit tests for cost-calculator math (long-context tiering, voice pricing, self-host exclusion)
+- `tests/validate-models.test.mjs` — end-to-end tests for the JSON validator
 - **Per-model `source` URL + `verifiedAt` date.** New optional schema fields capture the canonical pricing page each model was sourced from, and the `YYYY-MM-DD` date the maintainer last verified the data. The dashboard renders a small `verified YYYY-MM-DD ↗` link next to the model name in the value matrix, linking back to the official source in a new tab (`rel="noopener noreferrer"`). All 21 existing models have been backfilled with `source` + `verifiedAt: "2026-04-22"`. Validator enforces: (a) both fields must appear together or not at all, (b) `source` must be an `http(s)://` URL with no whitespace or HTML-unsafe characters, (c) `verifiedAt` must match `YYYY-MM-DD` and must be ≤ the top-level `updated` timestamp. Eight new tests cover each rule. Documents updated: `docs/adding-a-model.md` (recommended for new entries) and the schema docstring in `scripts/validate-models.mjs`.
 - **`docs/data-refresh-2026-Q2.md`** — auto-generated diff of every priced model in `data/models.json` against the provider's current public pricing page (OpenAI, Anthropic, Google, Mistral, Cohere, xAI). The report is **proposal-only** — no price in `data/models.json` was changed by this PR. Findings include `MATCH` (no action), `DRIFT — confirm & update` (needs maintainer re-verification — e.g. GPT-5.4 output now $15 vs. $10 in dataset; Gemini 2.5 Flash now $0.30/$2.50 vs. $0.15/$0.60), `NEW MODEL — consider add` (e.g. GPT-5.5, Opus 4.7, Gemini 3.1 Pro), `POSSIBLY DEPRECATED` (Claude Haiku 4 superseded by 4.5), `SCHEMA GAP` (cached-input pricing; long-context output rate), and `VERIFY MANUALLY` (xAI 403; Mistral page URL drift; Cohere Command A no longer publicly priced). The maintainer must re-verify each finding by hand before any number moves; the audit timestamp is 2026-04-24.
 
@@ -18,11 +25,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Split `index.html` into three files: `index.html` + `assets/styles.css` + `assets/app.js`** (loaded with `defer`). The `<style>` block (267 lines) and the main `<script>` block (476 lines) were extracted verbatim. Browser caching, sourcemap-readiness, and DevTools editing are all materially better. To prevent a flash-of-unstyled-theme on cold load, a tiny ~340-byte inline `<script>` in `<head>` synchronously reads the stored theme and applies `data-theme` on `<html>` before paint; the rest of the theme code lives in `app.js`.
 - **Tightened CSP `script-src`: dropped `'unsafe-inline'`.** With all app JS now external, `script-src` is `'self' 'sha256-n+ktr0bQsfq5R1rL3aqXtp6k6QdevtQRa6o//2PzlX0=' https://cdn.jsdelivr.net`. The hash whitelists exactly the inline theme bootstrap; arbitrary inline `<script>` blocks are now blocked even if a contributor adds one. `style-src` still allows `'unsafe-inline'` because the HTML uses inline `style="…"` attributes; CSS injection risk is materially lower than JS injection, so this is an acceptable trade-off.
 - **`CONTRIBUTING.md` updated** to document the new file layout and the rule that new inline scripts require a CSP hash update.
+- **Theme persists to `localStorage`** — explicit theme picks now survive page refresh; falls back to `prefers-color-scheme` only when no stored preference exists.
+- **`hashchange` listener** — back/forward navigation across filter and calculator state now reflects in the UI (was previously ignored).
+- **`pages.yml`** — both workflows now invoke `scripts/validate-models.mjs` and run `node --test 'tests/*.test.mjs'`. The dead "write `.htmlhintrc` if missing" step was removed (it ran *after* the lint step that consumed it). Removed `|| true` from the htmlhint step so HTML lint failures actually block the deploy. Pages artifact now contains only `index.html`, `assets/`, `data/`, `.nojekyll` instead of the entire repo root.
+- **Client-side `validateEntry`** — now mirrors the server validator: requires `color` and `radar`, validates color format (`/^#[rrggbb]$/`), validates radar values are integers in `[0, 10]`, validates verdict is one of `good|warn|bad`.
 
 ### Fixed
 - **Shared/bookmarked URLs now restore filters correctly on initial load.** Previously, opening `…/#provider=OpenAI&inputTokens=…` would silently drop the `provider`/`verdict` params: `loadData()` called `calculateCosts()` before `applyFilterFromHash()`, and `calculateCosts` ended with `syncHash()`, which `replaceState`-d the URL using only calculator params (since `filterProvider` / `filterVerdict` were still `null`). By the time `applyFilterFromHash` read `location.hash`, the filter params had already been overwritten. Now `calculateCosts({ skipHashSync: true })` defers the URL write until after filters are applied. (Caught by Devin Review on PR #10; previously broke the dashboard's documented "shareable scenario" feature.)
 - **`hashchange` listener no longer leaves stale filter state** when navigating to a hash without `provider`/`verdict` params. Previously, activating a filter, then pressing back to a filter-less hash, would leave the filter active in state — and the subsequent `calculateCosts()` would `replaceState` the stale filter back into the URL, corrupting the history entry. `applyFilterFromHash` now resets `filterProvider`/`filterVerdict` to `null` before applying, and the hashchange handler passes `applyOnly: true` plus `skipHashSync: true` so we never `replaceState` from inside a hashchange. (Caught by Devin Review on PR #8.)
 - **`CONTRIBUTING.md`** corrected to reflect the actual two CDN libraries (Chart.js + Lucide); Tailwind was removed in PR #8 but the doc still listed it.
+- `m.longContextInputRate ? …` interpolation guard now uses `!= null` so a hypothetical `0` rate would still render correctly.
+- `validate.yml` and `pages.yml` had drifted JSON-validation rules; consolidated.
 
 ### Security
 - **Pinned every GitHub Action to its full commit SHA** with the resolved semver in a trailing comment (`actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1`, `actions/configure-pages@983d7736d9b0ae728b81ab479565c72886d7745b  # v5.0.0`, etc.). Major-version tags are mutable and a compromised maintainer account could swap them; commit SHAs cannot. Recommended posture for any workflow with `id-token: write`.
@@ -32,25 +45,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Removed Tailwind Play CDN** — `cdn.tailwindcss.com` ships a 300 KB JIT compiler explicitly not for production. Verified zero Tailwind utility classes were actually in use; layout is custom CSS only.
 - **`scripts/validate-models.mjs`** — single source of truth for `data/models.json` validation. Includes an XSS-character scan that rejects `<`, `>`, `javascript:`, and `data:text/html` in user-facing string fields at the data layer.
 - **`validate.yml`** — added explicit `permissions: contents: read` (was inheriting repo defaults).
-
-### Added
-- `RESEARCH.md` — pricing sources, benchmark methodology notes, and full 21-model audit
-- `docs/ci.md` — full CI pipeline documentation covering all three jobs (`validate`, `deploy`, `health-check`)
-- `docs/adding-a-model.md` — step-by-step contributor guide for adding new entries to `data/models.json`
-- `.htmlhintrc` — HTML lint configuration for CI
-- `scripts/validate-models.mjs` — consolidated JSON validator used by both workflows
-- `tests/calculator.test.mjs` — unit tests for cost-calculator math (long-context tiering, voice pricing, self-host exclusion)
-- `tests/validate-models.test.mjs` — end-to-end tests for the JSON validator
-
-### Changed
-- **Theme persists to `localStorage`** — explicit theme picks now survive page refresh; falls back to `prefers-color-scheme` only when no stored preference exists.
-- **`hashchange` listener** — back/forward navigation across filter and calculator state now reflects in the UI (was previously ignored).
-- **`pages.yml`** — both workflows now invoke `scripts/validate-models.mjs` and run `node --test 'tests/*.test.mjs'`. The dead "write `.htmlhintrc` if missing" step was removed (it ran *after* the lint step that consumed it). Removed `|| true` from the htmlhint step so HTML lint failures actually block the deploy. Pages artifact now contains only `index.html`, `assets/`, `data/`, `.nojekyll` instead of the entire repo root.
-- **Client-side `validateEntry`** — now mirrors the server validator: requires `color` and `radar`, validates color format (`/^#[rrggbb]$/`), validates radar values are integers in `[0, 10]`, validates verdict is one of `good|warn|bad`.
-
-### Fixed
-- `m.longContextInputRate ? …` interpolation guard now uses `!= null` so a hypothetical `0` rate would still render correctly.
-- `validate.yml` and `pages.yml` had drifted JSON-validation rules; consolidated.
 
 ---
 
